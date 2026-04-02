@@ -1,0 +1,6 @@
+{
+  "api_server": "https://myXXXXXX.crm.ondemand.com",
+  "username": "your_user@tenant",
+  "password": "your_password",
+  "start_date": "2024-01-01T00:00:00Z"
+}
