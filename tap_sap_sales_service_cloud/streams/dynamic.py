@@ -59,6 +59,12 @@ class DynamicStream(BaseStream):
         self.expand_parent_entity_set = (
             root_metadata.get("expand-parent-entity-set") or ""
         )
+        self.orderby_field = (
+            root_metadata.get("orderby-field") or ""
+        )
+        self.replication_key_edm_type = (
+            root_metadata.get("replication-key-edm-type") or ""
+        )
 
         if self.expand_nav_property and self.expand_parent_entity_set:
             # Override path to point at the parent entity set so that

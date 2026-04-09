@@ -98,7 +98,7 @@ def sync(client, config: Dict, catalog: singer.Catalog, state: Dict) -> None:
                             stream_name,
                             stream.parent,
                         )
-                    continue
+                continue
 
             write_schema(
                 stream,
@@ -113,9 +113,9 @@ def sync(client, config: Dict, catalog: singer.Catalog, state: Dict) -> None:
             total_records = stream.sync(
                 state=state, transformer=transformer
             )
-            update_currently_syncing(state, None)
             LOGGER.info(
                 "FINISHED Syncing: %s, total_records: %s",
                 stream_name,
                 total_records,
             )
+            update_currently_syncing(state, None)

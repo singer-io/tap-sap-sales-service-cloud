@@ -7,15 +7,9 @@ from unittest import mock
 from singer import metadata
 
 from tap_sap_sales_service_cloud.metadata_discovery import (
-    REPLICATION_KEY_CANDIDATES,
-    KNOWN_PARENT_OVERRIDES,
-    _find_child,
-    _find_children,
-    _get_sap_attrib,
-    _is_filterable,
-    _to_snake_case,
-    discover_dynamic_streams,
-)
+    KNOWN_PARENT_OVERRIDES, REPLICATION_KEY_CANDIDATES, _find_child,
+    _find_children, _get_sap_attrib, _is_filterable, _to_snake_case,
+    discover_dynamic_streams)
 
 
 class _FakeResponse:
@@ -436,7 +430,3 @@ class TestParentChildDiscovery(unittest.TestCase):
             stream["replication_keys"],
             ["EntityLastChangedOn"],
         )
-
-
-if __name__ == "__main__":
-    unittest.main()

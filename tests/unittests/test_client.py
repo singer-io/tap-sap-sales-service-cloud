@@ -6,12 +6,10 @@ from unittest.mock import MagicMock
 
 from parameterized import parameterized
 
-from tap_sap_sales_service_cloud.client import (
-    DEFAULT_ODATA_PATH,
-    REQUEST_TIMEOUT,
-    SAPSalesServiceCloudClient,
-    raise_for_error,
-)
+from tap_sap_sales_service_cloud.client import (DEFAULT_ODATA_PATH,
+                                                REQUEST_TIMEOUT,
+                                                SAPSalesServiceCloudClient,
+                                                raise_for_error)
 from tap_sap_sales_service_cloud.exceptions import (
     SAPSalesServiceCloudBadRequestError, SAPSalesServiceCloudRateLimitError,
     SAPSalesServiceCloudUnauthorizedError)
