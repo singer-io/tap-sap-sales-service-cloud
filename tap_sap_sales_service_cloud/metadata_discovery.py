@@ -63,18 +63,18 @@ ODATA_TO_JSON_TYPE: Dict[str, object] = {
 # The first match that is also marked as filterable wins.
 # ---------------------------------------------------------------------------
 REPLICATION_KEY_CANDIDATES = [
+    "EntityLastChangedOn",  # SAP "Change Timestamp" on has-entities
+    "LastChangeDateTime",
+    "LastUpdatedOn",        # variant of UpdatedOn used on some entities
     "ChangedOn",
     "ChangeDateTime",
     "LastModifiedOn",
     "UpdatedOn",
-    "LastChangeDateTime",
     "ModifiedOn",
     # SAP C4C relationship/has-entity change timestamps (e.g.
     # CorporateAccountHasContactPersonCollection).  Added after the
     # primary candidates so they only win when no primary field exists.
-    "EntityLastChangedOn",  # SAP "Change Timestamp" on has-entities
     "LastChangedOn",        # variant of ChangedOn used on some entities
-    "LastUpdatedOn",        # variant of UpdatedOn used on some entities
 ]
 
 # ---------------------------------------------------------------------------
