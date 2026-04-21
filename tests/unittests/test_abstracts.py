@@ -7,6 +7,7 @@ from parameterized import parameterized
 from singer import get_bookmark
 from singer import metadata as md
 
+from tap_sap_sales_service_cloud.metadata_discovery import MDATA_NS
 from tap_sap_sales_service_cloud.streams.abstracts import ODATA_DATE_RE
 
 # ---------------------------------------------------------------------------
@@ -44,7 +45,7 @@ def _make_catalog(
         mdata, (), "valid-replication-keys", replication_keys
     )
     mdata = md.write(
-        mdata, (), "replication-key-edm-type", edm_type
+        mdata, (), f"{MDATA_NS}.replication-key-edm-type", edm_type
     )
     catalog.metadata = md.to_list(mdata)
     return catalog
@@ -835,7 +836,7 @@ class TestGetRecords(unittest.TestCase):
         stream.client.get.assert_not_called()
 
     def test_no_expand_when_only_nav_property_set(self):
-        """Only expand_nav_property, no parent set â†’ normal pagination."""
+        """Only expand_nav_property, no parent set normal pagination."""
         stream = self._ft_stream()
         stream.expand_nav_property = "Items"
         stream.expand_parent_entity_set = ""

@@ -32,12 +32,27 @@ SAP_DATA_NS = "{http://www.sap.com/Protocols/SAPData}"
 # Fallback pattern used when the namespace prefix differs across API versions.
 _SAP_NS_RE = re.compile(r"\{[^}]*sap[^}]*\}")
 
+# Namespace prefix for all tap-specific root-level Singer metadata keys.
+# Stitch and other Singer targets reject unknown root metadata keys unless
+# they are escaped with a dot (.). So we are maintaining a specific format
+MDATA_NS = "tap-sap-sales-service-cloud"
+
 # ---------------------------------------------------------------------------
 # OData primitive → JSON Schema type mapping
 # ---------------------------------------------------------------------------
 DATE_TIME_TYPES = {
     "Edm.DateTime",
     "Edm.DateTimeOffset",
+}
+
+# ------------------------------------------------------------------------------------------------------------
+# Primary key overrides for below mentioned EntityTypes. This is needed as in some streams, the PK is getting
+# duplicated across records. Solution is to override the dynamic key-prop definition and have all keys/property
+# define the primary key
+# ------------------------------------------------------------------------------------------------------------
+ENTITY_TYPE_PK_OVERRIDE = {
+    "CodeListMappingDataType",
+    "CodeList"
 }
 
 ODATA_TO_JSON_TYPE: Dict[str, object] = {
@@ -491,12 +506,13 @@ def discover_dynamic_streams(client) -> Tuple[Dict, Dict, Dict]:
 
             # Key properties.
             key_names: List[str] = []
-            key_node = _find_child(entity_type, "Key")
-            if key_node is not None:
-                for key_ref in _find_children(key_node, "PropertyRef"):
-                    ref_name = key_ref.attrib.get("Name")
-                    if ref_name:
-                        key_names.append(ref_name)
+            if type_name not in ENTITY_TYPE_PK_OVERRIDE:  # Consider the dynamic PK only for EntityTypes not in the override list
+                key_node = _find_child(entity_type, "Key")
+                if key_node is not None:
+                    for key_ref in _find_children(key_node, "PropertyRef"):
+                        ref_name = key_ref.attrib.get("Name")
+                        if ref_name:
+                            key_names.append(ref_name)
 
             # Scalar properties.
             properties: Dict[str, Dict] = {}
@@ -543,6 +559,11 @@ def discover_dynamic_streams(client) -> Tuple[Dict, Dict, Dict]:
                     filterable_props.add(prop_name)
                 if _is_sortable(prop):
                     sortable_props.add(prop_name)
+
+                # If the entity type is in the primary key override list,
+                # treat all properties as potential keys by adding them to the key_names list.
+                if type_name in ENTITY_TYPE_PK_OVERRIDE and prop_name not in key_names:
+                    key_names.append(prop_name)
 
             # NavigationProperty definitions (for relationship inference).
             navigations: List[Dict] = []
@@ -908,16 +929,16 @@ def discover_dynamic_streams(client) -> Tuple[Dict, Dict, Dict]:
                 mdata = metadata.write(
                     mdata, ("properties", rep_key), "inclusion", "automatic"
                 )
-        mdata = metadata.write(mdata, (), "entity-set", set_name)
+        mdata = metadata.write(mdata, (), f"{MDATA_NS}.entity-set", set_name)
         if orderby_field:
             mdata = metadata.write(
-                mdata, (), "orderby-field", orderby_field
+                mdata, (), f"{MDATA_NS}.orderby-field", orderby_field
             )
         if replication_key_edm_type:
             mdata = metadata.write(
                 mdata,
                 (),
-                "replication-key-edm-type",
+                f"{MDATA_NS}.replication-key-edm-type",
                 replication_key_edm_type,
             )
 
@@ -926,40 +947,40 @@ def discover_dynamic_streams(client) -> Tuple[Dict, Dict, Dict]:
                 mdata, (), "parent-tap-stream-id", parent_stream
             )
             mdata = metadata.write(
-                mdata, (), "parent-stream", parent_stream
+                mdata, (), f"{MDATA_NS}.parent-stream", parent_stream
             )
             mdata = metadata.write(
-                mdata, (), "parent-filter-field", parent_filter_field
+                mdata, (), f"{MDATA_NS}.parent-filter-field", parent_filter_field
             )
             mdata = metadata.write(
-                mdata, (), "parent-key-field", parent_key_field
+                mdata, (), f"{MDATA_NS}.parent-key-field", parent_key_field
             )
             if parent_secondary_filter_field:
                 mdata = metadata.write(
                     mdata,
                     (),
-                    "parent-secondary-filter-field",
+                    f"{MDATA_NS}.parent-secondary-filter-field",
                     parent_secondary_filter_field,
                 )
             if parent_secondary_key_field:
                 mdata = metadata.write(
                     mdata,
                     (),
-                    "parent-secondary-key-field",
+                    f"{MDATA_NS}.parent-secondary-key-field",
                     parent_secondary_key_field,
                 )
             if parent_id_field:
                 mdata = metadata.write(
-                    mdata, (), "parent-id-field", parent_id_field
+                    mdata, (), f"{MDATA_NS}.parent-id-field", parent_id_field
                 )
 
         if expand_info:
             mdata = metadata.write(
-                mdata, (), "expand-nav-property",
+                mdata, (), f"{MDATA_NS}.expand-nav-property",
                 expand_info["expand-nav-property"]
             )
             mdata = metadata.write(
-                mdata, (), "expand-parent-entity-set",
+                mdata, (), f"{MDATA_NS}.expand-parent-entity-set",
                 expand_info["expand-parent-entity-set"]
             )
 

@@ -2,6 +2,7 @@
 
 from singer import metadata
 
+from tap_sap_sales_service_cloud.metadata_discovery import MDATA_NS
 from tap_sap_sales_service_cloud.streams.abstracts import BaseStream
 
 
@@ -30,40 +31,40 @@ class DynamicStream(BaseStream):
         )
 
         # OData entity-set path (e.g. /sap/c4c/odata/v1/c4codataapi/AccountCollection)
-        entity_set = root_metadata.get("entity-set", self.tap_stream_id)
+        entity_set = root_metadata.get(f"{MDATA_NS}.entity-set", self.tap_stream_id)
         self.path = f"{client.odata_path}/{entity_set}"
 
         # Parent-child orchestration fields.
         self.parent = (
             root_metadata.get("parent-tap-stream-id")
-            or root_metadata.get("parent-stream")
+            or root_metadata.get(f"{MDATA_NS}.parent-stream")
             or ""
         )
         self.parent_filter_field = (
-            root_metadata.get("parent-filter-field") or ""
+            root_metadata.get(f"{MDATA_NS}.parent-filter-field") or ""
         )
         self.parent_key_field = (
-            root_metadata.get("parent-key-field") or "ObjectID"
+            root_metadata.get(f"{MDATA_NS}.parent-key-field") or "ObjectID"
         )
         self.parent_secondary_filter_field = (
-            root_metadata.get("parent-secondary-filter-field") or ""
+            root_metadata.get(f"{MDATA_NS}.parent-secondary-filter-field") or ""
         )
         self.parent_secondary_key_field = (
-            root_metadata.get("parent-secondary-key-field") or ""
+            root_metadata.get(f"{MDATA_NS}.parent-secondary-key-field") or ""
         )
 
         # OData $expand support for computed/read-only entity sets.
         self.expand_nav_property = (
-            root_metadata.get("expand-nav-property") or ""
+            root_metadata.get(f"{MDATA_NS}.expand-nav-property") or ""
         )
         self.expand_parent_entity_set = (
-            root_metadata.get("expand-parent-entity-set") or ""
+            root_metadata.get(f"{MDATA_NS}.expand-parent-entity-set") or ""
         )
         self.orderby_field = (
-            root_metadata.get("orderby-field") or ""
+            root_metadata.get(f"{MDATA_NS}.orderby-field") or ""
         )
         self.replication_key_edm_type = (
-            root_metadata.get("replication-key-edm-type") or ""
+            root_metadata.get(f"{MDATA_NS}.replication-key-edm-type") or ""
         )
 
         if self.expand_nav_property and self.expand_parent_entity_set:
