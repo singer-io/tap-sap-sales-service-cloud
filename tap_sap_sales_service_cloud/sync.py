@@ -6,6 +6,7 @@ import singer
 from singer import metadata
 
 from tap_sap_sales_service_cloud.schema import write_schema
+from tap_sap_sales_service_cloud.metadata_discovery import MDATA_NS
 from tap_sap_sales_service_cloud.streams.dynamic import DynamicStream
 
 LOGGER = singer.get_logger()
@@ -54,7 +55,7 @@ def sync(client, config: Dict, catalog: singer.Catalog, state: Dict) -> None:
         root_mdata = metadata.to_map(stream.metadata).get((), {})
         parent_stream = (
             root_mdata.get("parent-tap-stream-id")
-            or root_mdata.get("parent-stream")
+            or root_mdata.get(f"{MDATA_NS}.parent-stream")
         )
         if parent_stream:
             child_map.setdefault(parent_stream, []).append(

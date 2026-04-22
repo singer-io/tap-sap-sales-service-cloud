@@ -442,7 +442,7 @@ class TestBookmarkHelpers(unittest.TestCase):
 
 
 # ---------------------------------------------------------------------------
-# sync() â€” bookmark and is_selected behaviour
+# sync() - bookmark and is_selected behaviour
 # ---------------------------------------------------------------------------
 
 _WR = "tap_sap_sales_service_cloud.streams.abstracts.write_record"
