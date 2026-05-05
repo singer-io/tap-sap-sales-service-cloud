@@ -3,10 +3,8 @@
 import base64
 import unittest
 
-from tap_sap_sales_service_cloud.auth import (
-    build_basic_auth_header,
-    build_token_request,
-)
+from tap_sap_sales_service_cloud.auth import (build_basic_auth_header,
+                                              build_token_request)
 
 
 class TestBuildBasicAuthHeader(unittest.TestCase):

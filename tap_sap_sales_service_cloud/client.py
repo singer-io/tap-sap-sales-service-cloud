@@ -22,10 +22,8 @@ from requests.exceptions import ConnectionError as RequestsConnectionError
 from requests.exceptions import Timeout
 from singer import get_logger, metrics
 
-from tap_sap_sales_service_cloud.auth import (
-    build_basic_auth_header,
-    build_token_request,
-)
+from tap_sap_sales_service_cloud.auth import (build_basic_auth_header,
+                                              build_token_request)
 from tap_sap_sales_service_cloud.exceptions import (
     ERROR_CODE_EXCEPTION_MAPPING, SAPSalesServiceCloudError,
     SAPSalesServiceCloudRateLimitError, SAPSalesServiceCloudServer5xxError)

@@ -17,7 +17,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, Iterable, Optional
 
 from singer import (Transformer, get_bookmark, get_logger, metadata, metrics,
-                    write_bookmark, write_record, write_schema, write_state)
+                    write_bookmark, write_record, write_schema)
 from singer.utils import strftime, strptime_with_tz
 
 LOGGER = get_logger()
@@ -34,6 +34,25 @@ ODATA_DATE_RE = re.compile(
 # /Date(253402214400000)/ (9999-12-31) as a sentinel max-date — both
 # outside the Windows mktime range and cause OSError 22 without this fix.
 _UNIX_EPOCH = datetime(1970, 1, 1, tzinfo=timezone.utc)
+
+
+def _format_odata_datetimeoffset(dt: datetime) -> str:
+    """Format for ``Edm.DateTimeOffset`` filter literal.
+
+    Produces: ``YYYY-MM-DDTHH:MM:SS.ffffffZ``
+    """
+    utc_dt = dt.astimezone(timezone.utc)
+    return utc_dt.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+
+
+def _format_odata_datetime(dt: datetime) -> str:
+    """Format for ``Edm.DateTime`` filter literal.
+
+    SAP C4C ``Edm.DateTime`` fields reject a timezone suffix.
+    Produces: ``YYYY-MM-DDTHH:MM:SS.ffffff``
+    """
+    utc_dt = dt.astimezone(timezone.utc)
+    return utc_dt.strftime("%Y-%m-%dT%H:%M:%S.%f")
 
 
 class BaseStream(ABC):
@@ -58,6 +77,14 @@ class BaseStream(ABC):
     # OData $expand support for computed entities.
     expand_nav_property: str = ""
     expand_parent_entity_set: str = ""
+
+    # $orderby field confirmed sortable via EDMX sap:sortable annotation.
+    # Empty string means no $orderby is sent for this stream.
+    orderby_field: str = ""
+
+    # Raw Edm type of the replication key field.  Determines OData filter
+    # keyword: 'Edm.DateTimeOffset' -> datetimeoffset'...' else datetime'...'
+    replication_key_edm_type: str = ""
 
     def __init__(self, client=None, catalog=None) -> None:
         if catalog is None:
@@ -108,8 +135,18 @@ class BaseStream(ABC):
             )
             bookmark_dt = strptime_with_tz(bookmark)
             effective_dt = bookmark_dt - timedelta(days=lookback_days)
-            bookmark_value = strftime(effective_dt)
-            params["$filter"] = f"{key} ge datetime'{bookmark_value}'"
+            # Edm.DateTimeOffset -> datetimeoffset'...Z'
+            # Edm.DateTime       -> datetime'...' (no tz suffix)
+            if self.replication_key_edm_type == "Edm.DateTimeOffset":
+                fval = _format_odata_datetimeoffset(effective_dt)
+                params["$filter"] = (
+                    f"{key} ge datetimeoffset'{fval}'"
+                )
+            else:
+                fval = _format_odata_datetime(effective_dt)
+                params["$filter"] = (
+                    f"{key} ge datetime'{fval}'"
+                )
 
         if parent_obj and self.parent_filter_field:
             parent_val = parent_obj[self.parent_key_field]
@@ -130,6 +167,13 @@ class BaseStream(ABC):
                 if "$filter" in params
                 else clause
             )
+
+        # $orderby ensures deterministic page order so that $skip-based
+        # pagination always yields the same sequence across retries.
+        # Only applied when confirmed sortable via EDMX sap:sortable
+        # annotation (populated into self.orderby_field during discovery).
+        if self.orderby_field:
+            params["$orderby"] = self.orderby_field
 
         return params
 
@@ -154,15 +198,26 @@ class BaseStream(ABC):
         stream: str,
         key: str = None,
         value=None,
-    ):
-        """Wrapper around singer.write_bookmark — only advances forward."""
+    ) -> None:
+        """Wrapper around singer.write_bookmark.
+
+        Writes this stream's own bookmark only when the stream is selected.
+        Also writes the parent-alignment bookmark key on every child stream
+        so that the next incremental run fetches children from the same
+        window as the parent.
+        """
         bookmark_key = key or (
             self.replication_keys[0] if self.replication_keys else None
         )
         if not bookmark_key:
             return
-        current = self.get_bookmark(state, stream, bookmark_key)
-        write_bookmark(state, stream, bookmark_key, max(current, value))
+        if self.is_selected():
+            write_bookmark(state, stream, bookmark_key, value)
+        for child in self.child_to_sync:
+            parent_bk_key = f"{self.tap_stream_id}_{bookmark_key}"
+            write_bookmark(
+                state, child.tap_stream_id, parent_bk_key, value
+            )
 
     # ------------------------------------------------------------------
     # Record normalization
@@ -172,10 +227,6 @@ class BaseStream(ABC):
         """Parse OData V2 payload and return the results list."""
         data = payload.get("d", {})
         return data.get("results", [])
-
-    def get_next_link(self, payload: Dict) -> Optional[str]:
-        """Return the OData ``d.__next`` absolute URL, or None."""
-        return payload.get("d", {}).get("__next")
 
     def append_times_to_dates(self, record: Dict) -> None:
         """Normalize explicit date_fields to Singer-compatible timestamps."""
@@ -193,27 +244,35 @@ class BaseStream(ABC):
 
         Uses timedelta arithmetic from the Unix epoch to avoid mktime()
         overflow on Windows for sentinel dates like 1900-01-01 and 9999-12-31.
+
+        SAP also returns all-zero sentinel strings (e.g. ``"00000000"``) for
+        empty date fields.  These are coerced to ``None`` so that Singer's
+        Transformer does not raise a schema-mismatch error.
         """
         if not isinstance(value, str):
             return value
+        stripped = value.strip()
+        if stripped and all(c == "0" for c in stripped):
+            return None
         match = ODATA_DATE_RE.match(value)
         if not match:
             return value
+        # The OData V2 ±hhmm offset is a display hint only; the millisecond
+        # ticks are always UTC, so we only need the millis group.
         millis = int(match.group("millis"))
-        offset_str = match.group("offset")
         try:
             dt = _UNIX_EPOCH + timedelta(milliseconds=millis)
         except (OverflowError, OSError, ValueError):
-            return value
-        if offset_str:
-            sign = 1 if offset_str[0] == "+" else -1
-            hours = int(offset_str[1:3])
-            minutes = int(offset_str[3:5])
-            tz_offset = timezone(
-                timedelta(hours=sign * hours, minutes=sign * minutes)
-            )
-            dt = dt.astimezone(tz_offset)
-        return strftime(dt)
+            # Millisecond value is out of Python datetime range
+            # (e.g. .NET DateTime.MinValue = /Date(-62135769600000)/).
+            # Treat as null rather than returning the raw unparseable string.
+            return None
+        try:
+            return strftime(dt)
+        except (ValueError, OSError):
+            # strftime fails for very old dates (year < 1900) on some
+            # platforms — treat as null.
+            return None
 
     def _normalize_datetimes_with_schema(
         self, value: Any, schema: Dict
@@ -229,7 +288,7 @@ class BaseStream(ABC):
         types = schema.get("type", [])
         if isinstance(types, str):
             types = [types]
-        if schema.get("format") == "date-time" or "string" in types:
+        if schema.get("format") == "date-time":
             return self._coerce_odata_datetime(value)
         if isinstance(value, list):
             item_schema = schema.get("items", {})
@@ -292,44 +351,67 @@ class BaseStream(ABC):
     def get_records(
         self, state: Dict, parent_obj: Optional[Dict] = None
     ) -> Iterable[Dict]:
-        """Iterate records with OData ``d.__next`` pagination."""
+        """Iterate records using client-controlled $skip/$top pagination.
+
+        Each page is fetched with an explicit ``$skip`` offset and
+        ``$top`` page-size so the tap — not the server — owns the
+        pagination cursor.  ``$orderby`` (set in :meth:`build_params`)
+        guarantees a stable result-set order across pages.
+        """
         if self.expand_nav_property and self.expand_parent_entity_set:
             yield from self._get_records_via_expand(state, parent_obj)
             return
 
+        page_size = int(
+            self.client.config.get("page_size", 1000)
+        )
         params = self.build_params(state, parent_obj)
-        next_url: Optional[str] = None
+        params["$top"] = page_size
+        skip = 0
 
         while True:
-            if next_url:
-                # next-link is an absolute URL — fetch it directly.
-                raw = self.client.request_raw(
-                    "GET",
-                    next_url,
-                    headers={
-                        "Authorization": self.client.get_auth_header(),
-                        "Accept": "application/json",
-                    },
-                )
-                payload = raw.json()
+            params["$skip"] = skip
+            # Request total count only on the first page to avoid the
+            # server-side overhead on every subsequent page request.
+            if skip == 0:
+                params["$inlinecount"] = "allpages"
             else:
-                payload = self.client.get(
-                    self.path,
-                    params=params,
-                    headers={
-                        "Authorization": self.client.get_auth_header()
-                    },
-                )
+                params.pop("$inlinecount", None)
+
+            payload = self.client.get(
+                self.path,
+                params=params,
+                headers={
+                    "Authorization": self.client.get_auth_header()
+                },
+            )
 
             if not payload:
                 break
 
-            records = self.parse_odata_records(payload)
+            if skip == 0:
+                total_count = payload.get("d", {}).get("__count")
+                if total_count is not None:
+                    LOGGER.info(
+                        "Stream '%s' — total records available: %s",
+                        self.tap_stream_id,
+                        total_count,
+                    )
+
+            records = list(self.parse_odata_records(payload))
             yield from records
 
-            next_url = self.get_next_link(payload)
-            if not next_url:
+            # Fewer records than page_size means we are on the last page.
+            if len(records) < page_size:
                 break
+
+            skip += page_size
+            LOGGER.info(
+                "Stream '%s' — fetched %s records so far (page_size=%s)",
+                self.tap_stream_id,
+                skip,
+                page_size,
+            )
 
     # ------------------------------------------------------------------
     # Singer emission
@@ -390,11 +472,21 @@ class BaseStream(ABC):
                 self.append_times_to_dates(transformed_record)
 
                 record_passes_bookmark = True
+                record_value = (
+                    transformed_record.get(bookmark_key)
+                    if bookmark_key
+                    else None
+                )
                 if bookmark_key and bookmark:
-                    record_value = transformed_record.get(bookmark_key)
                     record_passes_bookmark = bool(
                         record_value and record_value >= bookmark
                     )
+
+                if record_passes_bookmark:
+                    if self.is_selected():
+                        write_record(self.tap_stream_id, transformed_record)
+                        counter.increment()
+
                     if record_value:
                         current_max_bookmark = (
                             max(current_max_bookmark, record_value)
@@ -402,11 +494,10 @@ class BaseStream(ABC):
                             else record_value
                         )
 
-                if record_passes_bookmark:
-                    write_record(self.tap_stream_id, transformed_record)
-                    counter.increment()
-
                     # Sync child streams for this parent record.
+                    # Intentionally outside is_selected(): an unselected
+                    # parent still drives child syncs by supplying parent_obj
+                    # without emitting its own SCHEMA/RECORD messages.
                     for child_stream in self.child_to_sync:
                         child_stream.sync(
                             state=state,
@@ -421,6 +512,5 @@ class BaseStream(ABC):
                     key=bookmark_key,
                     value=current_max_bookmark,
                 )
-                write_state(state)
 
             return counter.value

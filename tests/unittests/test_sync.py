@@ -12,25 +12,20 @@ from tap_sap_sales_service_cloud.sync import update_currently_syncing
 class TestUpdateCurrentlySyncing(unittest.TestCase):
     """Tests for update_currently_syncing."""
 
-    @mock.patch("tap_sap_sales_service_cloud.sync.singer")
-    def test_sets_stream_name_in_state(self, mock_singer):
-        mock_singer.get_currently_syncing = MagicMock(return_value=None)
-        mock_singer.set_currently_syncing = MagicMock()
-        mock_singer.write_state = MagicMock()
+    @mock.patch("singer.write_state")
+    @mock.patch("singer.set_currently_syncing")
+    def test_sets_stream_name_in_state(self, mock_set_syncing, mock_write_state):
         state = {}
         update_currently_syncing(state, "account_collection")
-        mock_singer.set_currently_syncing.assert_called_once_with(
-            state, "account_collection"
-        )
-        mock_singer.write_state.assert_called_once_with(state)
+        mock_set_syncing.assert_called_once_with(state, "account_collection")
+        mock_write_state.assert_called_once_with(state)
 
-    @mock.patch("tap_sap_sales_service_cloud.sync.singer")
-    def test_clears_stream_name_from_state(self, mock_singer):
-        mock_singer.write_state = MagicMock()
+    @mock.patch("singer.write_state")
+    def test_clears_stream_name_from_state(self, mock_write_state):
         state = {"currently_syncing": "account_collection"}
         update_currently_syncing(state, None)
         self.assertNotIn("currently_syncing", state)
-        mock_singer.write_state.assert_called_once_with(state)
+        mock_write_state.assert_called_once_with(state)
 
 
 class TestStreamSelection(unittest.TestCase):

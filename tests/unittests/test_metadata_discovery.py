@@ -7,15 +7,9 @@ from unittest import mock
 from singer import metadata
 
 from tap_sap_sales_service_cloud.metadata_discovery import (
-    REPLICATION_KEY_CANDIDATES,
-    KNOWN_PARENT_OVERRIDES,
-    _find_child,
-    _find_children,
-    _get_sap_attrib,
-    _is_filterable,
-    _to_snake_case,
-    discover_dynamic_streams,
-)
+    KNOWN_PARENT_OVERRIDES, MDATA_NS, REPLICATION_KEY_CANDIDATES, _find_child,
+    _find_children, _get_sap_attrib, _is_filterable, _to_snake_case,
+    discover_dynamic_streams)
 
 
 class _FakeResponse:
@@ -172,12 +166,12 @@ class TestReplicationKeyCandidates(unittest.TestCase):
         self.assertGreater(len(REPLICATION_KEY_CANDIDATES), 0)
 
     def test_primary_candidates_precede_secondary(self):
-        """ChangedOn must come before EntityLastChangedOn in priority."""
+        """EntityLastChangedOn must come before ChangedOn in priority."""
         idx_primary = REPLICATION_KEY_CANDIDATES.index("ChangedOn")
         idx_secondary = REPLICATION_KEY_CANDIDATES.index(
             "EntityLastChangedOn"
         )
-        self.assertLess(idx_primary, idx_secondary)
+        self.assertLess(idx_secondary, idx_primary)
 
 
 class TestParentChildDiscovery(unittest.TestCase):
@@ -258,11 +252,17 @@ class TestParentChildDiscovery(unittest.TestCase):
             field_metadata["address_collection"]
         ).get((), {})
         self.assertEqual(
-            root_metadata["parent-stream"],
+            root_metadata[f"{MDATA_NS}.parent-stream"],
             "account_collection",
         )
-        self.assertEqual(root_metadata["parent-filter-field"], "AccountID")
-        self.assertEqual(root_metadata["parent-key-field"], "ID")
+        self.assertEqual(
+            root_metadata[f"{MDATA_NS}.parent-filter-field"],
+            "AccountID",
+        )
+        self.assertEqual(
+            root_metadata[f"{MDATA_NS}.parent-key-field"],
+            "ID",
+        )
 
     def test_multiplicity_heuristic_relationship_discovered(self):
         metadata_xml = """
@@ -436,7 +436,3 @@ class TestParentChildDiscovery(unittest.TestCase):
             stream["replication_keys"],
             ["EntityLastChangedOn"],
         )
-
-
-if __name__ == "__main__":
-    unittest.main()
