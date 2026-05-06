@@ -10016,6 +10016,19 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
                 cls.REPLICATION_KEYS: set(),
                 cls.OBEYS_START_DATE: False,
             },
+            "social_media_user_profile_collection": {
+                cls.PRIMARY_KEYS: {"ObjectID"},
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
+            },
+            "social_media_user_profile_bupa_reference_collection": {
+                cls.PRIMARY_KEYS: {"ObjectID"},
+                cls.REPLICATION_METHOD: cls.FULL_TABLE,
+                cls.REPLICATION_KEYS: set(),
+                cls.OBEYS_START_DATE: False,
+                cls.PARENT_TAP_STREAM_ID: "social_media_user_profile_collection",
+            },
             "social_media_user_profile_bupa_reference_business_partner_category_code_collection": {
                 cls.PRIMARY_KEYS: {"Code", "Description"},
                 cls.REPLICATION_METHOD: cls.FULL_TABLE,
@@ -10033,6 +10046,13 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
                 cls.REPLICATION_METHOD: cls.FULL_TABLE,
                 cls.REPLICATION_KEYS: set(),
                 cls.OBEYS_START_DATE: False,
+            },
+            "social_media_user_profile_user_information_collection": {
+                cls.PRIMARY_KEYS: {"ObjectID"},
+                cls.REPLICATION_METHOD: cls.FULL_TABLE,
+                cls.REPLICATION_KEYS: set(),
+                cls.OBEYS_START_DATE: False,
+                cls.PARENT_TAP_STREAM_ID: "social_media_user_profile_collection",
             },
             "social_media_user_profile_user_information_social_media_channel_code_collection": {
                 cls.PRIMARY_KEYS: {"Code", "Description"},
