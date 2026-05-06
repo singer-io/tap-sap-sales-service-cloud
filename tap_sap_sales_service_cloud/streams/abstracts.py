@@ -86,6 +86,8 @@ class BaseStream(ABC):
     # keyword: 'Edm.DateTimeOffset' -> datetimeoffset'...' else datetime'...'
     replication_key_edm_type: str = ""
 
+    path: str = ""
+
     def __init__(self, client=None, catalog=None) -> None:
         if catalog is None:
             raise ValueError(
