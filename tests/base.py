@@ -51,6 +51,8 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
         Each entry mirrors the Singer tap-tester BaseCase convention:
           PRIMARY_KEYS, REPLICATION_METHOD, REPLICATION_KEYS,
           OBEYS_START_DATE, and PARENT (for child streams).
+
+        NOTE: Update the below dict to include new streams that are accessible or added in the instance.
         """
         return {
             "account_duplicate_check_result_collection": {
@@ -11430,5 +11432,8 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             "time_entry_item_collection",
             "visit_btd_reference_collection",
             "visit_text_collection_collection",
-            "visit_worklist_item_collection"
+            "visit_worklist_item_collection",
+            "social_media_user_profile_collection",
+            "social_media_user_profile_bupa_reference_collection",
+            "social_media_user_profile_user_information_collection"
         }
