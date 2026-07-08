@@ -262,30 +262,110 @@ def _child_task(
 
 
 # ---------------------------------------------------------------------------
-# Cascade-exclude helper
+# Cascade-exclude helpers
 # ---------------------------------------------------------------------------
 
-def _cascade_exclude(
+def _cascade_exclude_children(
     stream_defs: Dict,
-    directly_failed: Set[str],
+    excluded: Set[str],
 ) -> Set[str]:
-    """Return dependent streams to exclude because their parent was pruned.
+    """Propagate exclusions transitively through parent-child chains.
 
-    Covers child streams (``parent_stream`` key) and ``$expand``-only
-    streams whose expand-parent appears in *directly_failed*.
+    Iterates until no new exclusions are found so that multi-level chains
+    (grandparent → child → grandchild) are fully propagated:
+
+    * Round 1: grandparent excluded  → child cascade-excluded
+    * Round 2: child now excluded    → grandchild cascade-excluded
+    * … and so on until the set stabilises.
+
+    A stream is added to the exclusion set when either:
+
+    * Its ``parent_stream`` already appears in *excluded* (parent was
+      probe-rejected HTTP 4xx/5xx, or was itself cascade-excluded in a
+      previous round).
+    * Its ``parent_stream`` is **not present in *stream_defs* at all**
+      (dangling parent reference — no parent keys will ever be available).
+
+    Parameters
+    ----------
+    stream_defs:
+        Full ``{stream_name: stream_def_dict}`` mapping.
+    excluded:
+        Mutable working set of already-excluded stream names.  Updated
+        in-place *and* returned as a new subset containing only the
+        streams added by this function.
+
+    Returns
+    -------
+    Set[str]
+        Streams newly added by this call (does **not** include streams
+        that were already in *excluded* on entry).
     """
-    cascade: Set[str] = set()
-    for stream_name, sdef in stream_defs.items():
-        if stream_name in directly_failed:
-            continue
+    newly_excluded: Set[str] = set()
 
-        parent = sdef.get("parent_stream") or ""
-        if parent and parent in directly_failed:
-            LOGGER.info(
-                "Cascade-excluding child '%s' — parent '%s' pruned.",
-                stream_name, parent,
-            )
-            cascade.add(stream_name)
+    # The loop repeats until no new exclusions are found so that
+    # multi-level chains are fully propagated.
+    changed = True
+    while changed:
+        changed = False
+        for stream_name, sdef in stream_defs.items():
+            if stream_name in excluded:
+                continue
+
+            parent = sdef.get("parent_stream") or ""
+            if not parent:
+                continue
+
+            if parent in excluded:
+                LOGGER.warning(
+                    "[Probe] Excluding child stream '%s' — its parent "
+                    "stream '%s' was excluded (HTTP 4xx/5xx or cascade), "
+                    "no parent keys available.",
+                    stream_name,
+                    parent,
+                )
+                newly_excluded.add(stream_name)
+                excluded.add(stream_name)
+                changed = True
+
+            elif parent not in stream_defs:
+                LOGGER.warning(
+                    "[Probe] Excluding child stream '%s' — its parent "
+                    "stream '%s' is not present in the catalog (dangling "
+                    "parent reference), no parent keys available.",
+                    stream_name,
+                    parent,
+                )
+                newly_excluded.add(stream_name)
+                excluded.add(stream_name)
+                changed = True
+
+    return newly_excluded
+
+
+def _cascade_exclude_expand(
+    stream_defs: Dict,
+    excluded: Set[str],
+) -> Set[str]:
+    """Exclude ``$expand``-only streams whose expand-parent was pruned.
+
+    Parameters
+    ----------
+    stream_defs:
+        Full ``{stream_name: stream_def_dict}`` mapping.
+    excluded:
+        Working set of already-excluded stream names (read-only here;
+        matches are against the set as it stands after child cascade).
+
+    Returns
+    -------
+    Set[str]
+        Streams newly added by this call.
+    """
+    newly_excluded: Set[str] = set()
+
+    for stream_name, sdef in stream_defs.items():
+        if stream_name in excluded:
             continue
 
         expand_parent_raw = (
@@ -293,17 +373,64 @@ def _cascade_exclude(
                 "expand-parent-entity-set", ""
             )
         )
-        if expand_parent_raw:
-            expand_parent = _to_snake_case(expand_parent_raw)
-            if expand_parent in directly_failed:
-                LOGGER.info(
-                    "Cascade-excluding $expand stream '%s' "
-                    "— expand-parent '%s' pruned.",
-                    stream_name, expand_parent,
-                )
-                cascade.add(stream_name)
+        if not expand_parent_raw:
+            continue
 
-    return cascade
+        expand_parent = _to_snake_case(expand_parent_raw)
+        if expand_parent in excluded:
+            LOGGER.info(
+                "[Probe] Cascade-excluding $expand stream '%s' "
+                "— expand-parent '%s' pruned.",
+                stream_name,
+                expand_parent,
+            )
+            newly_excluded.add(stream_name)
+
+    return newly_excluded
+
+
+def _cascade_exclude(
+    stream_defs: Dict,
+    directly_failed: Set[str],
+) -> Set[str]:
+    """Return the complete set of streams to cascade-exclude.
+
+    Delegates to two focused helpers:
+
+    1. :func:`_cascade_exclude_children` — multi-level parent-child chain
+       propagation (grandparent → child → grandchild, etc.).
+    2. :func:`_cascade_exclude_expand` — ``$expand``-only streams whose
+       expand-parent was pruned.
+
+    Parameters
+    ----------
+    stream_defs:
+        Full ``{stream_name: stream_def_dict}`` mapping.
+    directly_failed:
+        Streams that failed their own probe (HTTP 4xx/5xx).
+
+    Returns
+    -------
+    Set[str]
+        All cascade-excluded streams (does **not** include
+        *directly_failed* entries).
+    """
+    # Work on a copy so the helpers can mutate it without affecting the
+    # caller's original set.
+    working_excluded: Set[str] = set(directly_failed)
+
+    child_cascade = _cascade_exclude_children(stream_defs, working_excluded)
+
+    if child_cascade:
+        LOGGER.info(
+            "[Probe] Cascade-excluded %d child stream(s) whose parent "
+            "stream was excluded (HTTP 4xx/5xx) or missing from catalog.",
+            len(child_cascade),
+        )
+
+    expand_cascade = _cascade_exclude_expand(stream_defs, working_excluded)
+
+    return child_cascade | expand_cascade
 
 
 # ---------------------------------------------------------------------------
