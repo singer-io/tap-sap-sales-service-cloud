@@ -9,7 +9,7 @@ from singer import metadata
 from tap_sap_sales_service_cloud.metadata_discovery import (
     KNOWN_PARENT_OVERRIDES, MDATA_NS, REPLICATION_KEY_CANDIDATES, _find_child,
     _find_children, _get_sap_attrib, _is_filterable, _to_snake_case,
-    discover_dynamic_streams)
+    _dedup_case_insensitive_properties, discover_dynamic_streams)
 
 
 class _FakeResponse:
@@ -436,3 +436,143 @@ class TestParentChildDiscovery(unittest.TestCase):
             stream["replication_keys"],
             ["EntityLastChangedOn"],
         )
+
+
+# ---------------------------------------------------------------------------
+# _dedup_case_insensitive_properties
+# ---------------------------------------------------------------------------
+
+class TestDedupCaseInsensitiveProperties(unittest.TestCase):
+    """Unit tests for the case-duplicate property deduplication helper."""
+
+    def _run(self, prop_names):
+        """Build minimal tracking structures from *prop_names* and run dedup.
+
+        Returns (properties, filterable_props, sortable_props,
+                 prop_edm_types, key_names) after deduplication.
+        """
+        properties = {n: {"type": ["string", "null"]} for n in prop_names}
+        filterable_props = set(prop_names)
+        sortable_props = set(prop_names)
+        prop_edm_types = {n: "Edm.String" for n in prop_names}
+        key_names = list(prop_names)
+
+        _dedup_case_insensitive_properties(
+            "TestEntity",
+            properties,
+            filterable_props,
+            sortable_props,
+            prop_edm_types,
+            key_names,
+        )
+        return properties, filterable_props, sortable_props, prop_edm_types, key_names
+
+    # -- basic dedup --------------------------------------------------------
+
+    def test_no_duplicates_unchanged(self):
+        """Uniquely-cased properties must survive untouched."""
+        props, _, _, _, _ = self._run(["ObjectID", "LanguageCode", "Name"])
+        self.assertEqual(set(props), {"ObjectID", "LanguageCode", "Name"})
+
+    def test_pascal_case_kept_over_lower(self):
+        """PascalCase 'LanguageCode' must win over 'languageCode'."""
+        props, _, _, _, _ = self._run(["languageCode", "LanguageCode"])
+        self.assertIn("LanguageCode", props)
+        self.assertNotIn("languageCode", props)
+
+    def test_pascal_case_kept_when_seen_second(self):
+        """PascalCase must be preferred even if it appears after the lower-case variant."""
+        props, _, _, _, _ = self._run(["languagecode", "LanguageCode"])
+        self.assertIn("LanguageCode", props)
+        self.assertNotIn("languagecode", props)
+
+    def test_first_seen_kept_when_no_pascal(self):
+        """When neither variant starts with a lower letter, the upper-first
+        variant is preferred (isupper() check on first character).
+        'LANGUAGECODE' starts with an upper letter so it beats 'languagecode'.
+        """
+        props, _, _, _, _ = self._run(["languagecode", "LANGUAGECODE"])
+        self.assertIn("LANGUAGECODE", props)
+        self.assertNotIn("languagecode", props)
+
+    def test_exact_duplicates_deduped_to_one(self):
+        """Only one entry must survive when two names share the same lower form."""
+        props, _, _, _, _ = self._run(["LanguageCode", "languageCode"])
+        self.assertEqual(len(props), 1)
+
+    # -- auxiliary structure consistency ------------------------------------
+
+    def test_filterable_props_updated(self):
+        """Dropped property must be removed from filterable_props."""
+        _, filterable, _, _, _ = self._run(["languageCode", "LanguageCode"])
+        self.assertIn("LanguageCode", filterable)
+        self.assertNotIn("languageCode", filterable)
+
+    def test_sortable_props_updated(self):
+        """Dropped property must be removed from sortable_props."""
+        _, _, sortable, _, _ = self._run(["languageCode", "LanguageCode"])
+        self.assertIn("LanguageCode", sortable)
+        self.assertNotIn("languageCode", sortable)
+
+    def test_prop_edm_types_updated(self):
+        """Dropped property must be removed from prop_edm_types."""
+        _, _, _, edm_types, _ = self._run(["languageCode", "LanguageCode"])
+        self.assertIn("LanguageCode", edm_types)
+        self.assertNotIn("languageCode", edm_types)
+
+    def test_key_names_updated(self):
+        """Dropped property must be removed from key_names."""
+        _, _, _, _, key_names = self._run(["languageCode", "LanguageCode"])
+        self.assertIn("LanguageCode", key_names)
+        self.assertNotIn("languageCode", key_names)
+
+    # -- multi-duplicate groups ---------------------------------------------
+
+    def test_multiple_duplicate_groups(self):
+        """Two independent duplicate groups must each be resolved."""
+        props, _, _, _, _ = self._run(
+            ["languageCode", "LanguageCode", "objectid", "ObjectID"]
+        )
+        self.assertIn("LanguageCode", props)
+        self.assertIn("ObjectID", props)
+        self.assertNotIn("languageCode", props)
+        self.assertNotIn("objectid", props)
+
+    # -- integration via discover_dynamic_streams ---------------------------
+
+    def test_discover_deduplicates_case_variant_in_schema(self):
+        """discover_dynamic_streams must drop languageCode and keep LanguageCode."""
+        metadata_xml = """
+        <Edmx>
+          <DataServices>
+            <Schema Namespace="TestModel"
+                    xmlns:sap="http://www.sap.com/Protocols/SAPData">
+              <EntityType Name="MemoActivityText">
+                <Key><PropertyRef Name="ObjectID" /></Key>
+                <Property Name="ObjectID" Type="Edm.String"
+                          sap:filterable="true" />
+                <Property Name="LanguageCode" Type="Edm.String"
+                          sap:filterable="true" />
+                <Property Name="languageCode" Type="Edm.String"
+                          sap:filterable="true" />
+                <Property Name="TextContent" Type="Edm.String"
+                          sap:filterable="false" />
+              </EntityType>
+              <EntityContainer Name="DefaultContainer">
+                <EntitySet
+                    Name="MemoActivityTextCollection"
+                    EntityType="TestModel.MemoActivityText" />
+              </EntityContainer>
+            </Schema>
+          </DataServices>
+        </Edmx>
+        """
+        client = _FakeClient(metadata_xml)
+        schemas, _, _ = discover_dynamic_streams(client)
+
+        schema_props = schemas["memo_activity_text_collection"]["properties"]
+        self.assertIn("LanguageCode", schema_props)
+        self.assertNotIn("languageCode", schema_props)
+        # Unrelated fields must be unaffected.
+        self.assertIn("ObjectID", schema_props)
+        self.assertIn("TextContent", schema_props)

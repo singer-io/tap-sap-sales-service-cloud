@@ -464,6 +464,91 @@ def _pff_schema(
 
 
 # ---------------------------------------------------------------------------
+# Property deduplication helper
+# ---------------------------------------------------------------------------
+
+def _dedup_case_insensitive_properties(
+    entity_name: str,
+    properties: Dict[str, Dict],
+    filterable_props: set,
+    sortable_props: set,
+    prop_edm_types: Dict[str, str],
+    key_names: List[str],
+) -> None:
+    """Remove case-duplicate property names from *properties* in-place.
+
+    SAP C4C EDMX occasionally exposes two ``Property`` elements whose names
+    differ only in casing (e.g. ``LanguageCode`` and ``languageCode``).
+    JSON Schema property names are case-sensitive, but Singer targets and
+    downstream warehouses often treat them as identical, leading to column
+    conflicts.
+
+    Strategy
+    --------
+    For every group of names that are identical when lower-cased:
+
+    * Keep the name whose capitalisation matches the most-common SAP
+      convention (i.e. PascalCase — upper first letter).  If no PascalCase
+      variant exists, keep the first name encountered.
+    * Drop all other variants and emit a ``WARNING`` log for each one so
+      the removal is fully auditable.
+    * All auxiliary tracking structures (``filterable_props``,
+      ``sortable_props``, ``prop_edm_types``, ``key_names``) are updated
+      to stay consistent with the pruned ``properties`` dict.
+
+    Parameters
+    ----------
+    entity_name:
+        Human-readable label used in log messages (entity-type name).
+    properties:
+        Mutable ``{prop_name: json_schema}`` dict built from EDMX.
+    filterable_props:
+        Mutable set of filterable property names.
+    sortable_props:
+        Mutable set of sortable property names.
+    prop_edm_types:
+        Mutable ``{prop_name: edm_type}`` dict.
+    key_names:
+        Mutable list of primary-key property names.
+    """
+    seen: Dict[str, str] = {}   # lower_name → canonical name to keep
+    to_drop: List[str] = []     # names scheduled for removal
+
+    for name in list(properties):
+        lower = name.lower()
+        if lower not in seen:
+            seen[lower] = name
+        else:
+            existing = seen[lower]
+            # Prefer PascalCase (upper first letter) as the canonical form.
+            if name[0].isupper() and not existing[0].isupper():
+                # New name is better-cased — swap canonical, drop old.
+                LOGGER.warning(
+                    "[Discovery] Entity '%s': dropping case-duplicate "
+                    "property '%s' in favour of '%s'.",
+                    entity_name, existing, name,
+                )
+                to_drop.append(existing)
+                seen[lower] = name
+            else:
+                # Keep existing; drop the new arrival.
+                LOGGER.warning(
+                    "[Discovery] Entity '%s': dropping case-duplicate "
+                    "property '%s' in favour of '%s'.",
+                    entity_name, name, existing,
+                )
+                to_drop.append(name)
+
+    for name in to_drop:
+        properties.pop(name, None)
+        filterable_props.discard(name)
+        sortable_props.discard(name)
+        prop_edm_types.pop(name, None)
+        if name in key_names:
+            key_names.remove(name)
+
+
+# ---------------------------------------------------------------------------
 # Public entry point
 # ---------------------------------------------------------------------------
 
@@ -564,6 +649,18 @@ def discover_dynamic_streams(client) -> Tuple[Dict, Dict, Dict]:
                 # treat all properties as potential keys by adding them to the key_names list.
                 if type_name in ENTITY_TYPE_PK_OVERRIDE and prop_name not in key_names:
                     key_names.append(prop_name)
+
+            # Deduplicate properties whose names differ only in casing
+            # (e.g. LanguageCode vs languageCode). Must run after all
+            # Property elements have been processed so the full set is known.
+            _dedup_case_insensitive_properties(
+                type_name,
+                properties,
+                filterable_props,
+                sortable_props,
+                prop_edm_types,
+                key_names,
+            )
 
             # NavigationProperty definitions (for relationship inference).
             navigations: List[Dict] = []
