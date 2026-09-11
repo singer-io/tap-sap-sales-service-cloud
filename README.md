@@ -62,6 +62,30 @@ for full details.
 
 ---
 
+## Custom OData Service Path
+
+By default the tap discovers and syncs the standard C4C OData API at
+`/sap/c4c/odata/v1/c4codataapi`. Some tenants also expose custom OData
+services (e.g. Account Plan, Market Intelligence) under separate paths.
+Point the tap at one of these instead via the optional `odata_path` config
+key — the tap connects to whichever service path is configured and
+discovers all entity sets exposed there:
+
+```json
+{
+  "api_server": "https://myXXXXXX.crm.ondemand.com",
+  "username": "your_user@tenant",
+  "password": "your_password",
+  "start_date": "2024-01-01T00:00:00Z",
+  "odata_path": "/sap/c4c/odata/cust/v1/accountplanodata"
+}
+```
+
+Only one `odata_path` is active per tap connection/config. To sync the
+standard API alongside one or more custom services, set up a separate
+connection (config file) per service, each pointing at the same
+`api_server` with a different `odata_path`
+
 ## Quick Start
 
 ```bash
