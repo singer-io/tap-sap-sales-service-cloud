@@ -496,6 +496,31 @@ class TestSync(unittest.TestCase):
         self.assertEqual(len(written), 1)
         self.assertEqual(written[0]["ObjectID"], "2")
 
+    def test_null_replication_key_record_still_emitted(self):
+        """Rows with a NULL replication key can't be bookmark-compared and
+        must not be silently dropped a second time client-side (the API
+        already returns them via the 'eq null' $filter clause)."""
+        stream = self._make_sync_stream([
+            {"ObjectID": "1", "ChangedOn": None, "Name": "legacy-null"},
+            {"ObjectID": "2",
+             "ChangedOn": "2025-01-01T00:00:00.000000Z",
+             "Name": "new"},
+        ])
+        state = {
+            "bookmarks": {
+                "test_stream": {"ChangedOn": "2024-01-01T00:00:00Z"},
+            }
+        }
+        written = []
+        with patch(_WR, side_effect=lambda s, r: written.append(r)):
+            stream.sync(state=state, transformer=self._transformer())
+        self.assertEqual({r["ObjectID"] for r in written}, {"1", "2"})
+        # NULL-valued record must not regress the advanced bookmark.
+        self.assertEqual(
+            get_bookmark(state, "test_stream", "ChangedOn"),
+            "2025-01-01T00:00:00.000000Z",
+        )
+
     def test_bookmark_advances_to_max_record_value(self):
         stream = self._make_sync_stream([
             {"ObjectID": "1",
@@ -743,8 +768,9 @@ class TestGetRecords(unittest.TestCase):
         list(stream.get_records(state={}))
         flt = self._params_of_call(stream, 0)["$filter"]
         self.assertIn(exp_in_filter, flt)
+        self.assertIn("ChangedOn eq null or ", flt)
         if ends_with_z:
-            self.assertTrue(flt.endswith("Z'"))
+            self.assertTrue(flt.endswith("Z')"))
         else:
             self.assertNotIn("Z'", flt)
 

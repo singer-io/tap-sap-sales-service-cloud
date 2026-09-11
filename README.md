@@ -29,6 +29,13 @@ For each discovered entity set:
 | Replication method  | `INCREMENTAL` when replication key found, else `FULL_TABLE`             |
 | Pagination          | OData `d.__next` traversal                                              |
 
+For `INCREMENTAL` streams, records whose replication-key field is `NULL` in
+the source (e.g. legacy rows that predate change-tracking) are always
+included via an `<key> eq null or <key> ge <bookmark>` `$filter` clause —
+SAP's OData service otherwise excludes `NULL` from `ge` comparisons
+regardless of `start_date`. These rows have no comparable timestamp, so they
+are re-fetched on every run and never advance the bookmark.
+
 ---
 
 ## Authentication
