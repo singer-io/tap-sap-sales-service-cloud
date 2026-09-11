@@ -141,14 +141,17 @@ class BaseStream(ABC):
             # Edm.DateTime       -> datetime'...' (no tz suffix)
             if self.replication_key_edm_type == "Edm.DateTimeOffset":
                 fval = _format_odata_datetimeoffset(effective_dt)
-                params["$filter"] = (
-                    f"{key} ge datetimeoffset'{fval}'"
-                )
+                date_clause = f"{key} ge datetimeoffset'{fval}'"
             else:
                 fval = _format_odata_datetime(effective_dt)
-                params["$filter"] = (
-                    f"{key} ge datetime'{fval}'"
-                )
+                date_clause = f"{key} ge datetime'{fval}'"
+            # SAP applies three-valued (SQL-style) logic to 'ge' comparisons,
+            # so rows where the replication key is NULL never satisfy the
+            # filter and are silently excluded by the server — regardless of
+            # start_date. OR in an explicit 'eq null' clause so those rows
+            # are always returned; they can't be bookmarked incrementally,
+            # so they are re-fetched on every run (see sync()).
+            params["$filter"] = f"({key} eq null or {date_clause})"
 
         if parent_obj and self.parent_filter_field:
             parent_val = parent_obj[self.parent_key_field]
@@ -479,10 +482,13 @@ class BaseStream(ABC):
                     if bookmark_key
                     else None
                 )
-                if bookmark_key and bookmark:
-                    record_passes_bookmark = bool(
-                        record_value and record_value >= bookmark
-                    )
+                # A NULL replication-key value can never be compared against
+                # the bookmark. Such rows are only fetched via the $filter's
+                # 'eq null' clause, so pass them through here rather than
+                # dropping them a second time; they simply won't advance
+                # current_max_bookmark below.
+                if bookmark_key and bookmark and record_value:
+                    record_passes_bookmark = record_value >= bookmark
 
                 if record_passes_bookmark:
                     if self.is_selected():
