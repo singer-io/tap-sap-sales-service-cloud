@@ -24,6 +24,7 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
 
     start_date = "2024-01-01T00:00:00Z"
     PARENT_TAP_STREAM_ID = "parent-tap-stream-id"
+    DEFAULT_ODATA_PATH = "/sap/c4c/odata/v1/c4codataapi"
 
     # ------------------------------------------------------------------
     # Tap identification
@@ -11097,6 +11098,7 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
         """Configuration properties required for the tap (non-credential)."""
         return {
             "start_date": self.start_date,
+            "odata_path": self.DEFAULT_ODATA_PATH,
         }
 
     def streams_to_exclude(self):
