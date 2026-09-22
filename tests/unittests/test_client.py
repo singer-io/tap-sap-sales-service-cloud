@@ -9,7 +9,8 @@ from parameterized import parameterized
 from tap_sap_sales_service_cloud.client import (DEFAULT_ODATA_PATH,
                                                 REQUEST_TIMEOUT,
                                                 SAPSalesServiceCloudClient,
-                                                raise_for_error)
+                                                raise_for_error,
+                                                validate_api_server)
 from tap_sap_sales_service_cloud.exceptions import (
     SAPSalesServiceCloudBadRequestError, SAPSalesServiceCloudRateLimitError,
     SAPSalesServiceCloudUnauthorizedError)
@@ -50,6 +51,25 @@ def _server_error_response():
 
 class TestClientInit(unittest.TestCase):
     """Tests for SAPSalesServiceCloudClient construction."""
+
+    @parameterized.expand([
+        "https://my123456.crm.ondemand.com",
+        "https://my123456.crm.ondemand.com/",
+    ])
+    def test_accepts_sap_api_server(self, api_server):
+        validate_api_server(api_server)
+
+    @parameterized.expand([
+        "http://my123456.crm.ondemand.com",
+        "https://evil.example",
+        "https://my123456.crm.ondemand.com.evil.example",
+        "https://my123456.crm.ondemand.com/path",
+        "https://my123456.crm.ondemand.com:443",
+        "https://my123456.crm.ondemand.com?target=evil.example",
+    ])
+    def test_rejects_non_sap_api_server(self, api_server):
+        with self.assertRaises(ValueError):
+            SAPSalesServiceCloudClient(_make_config(api_server=api_server))
 
     def test_base_url_trailing_slash_stripped(self):
         config = _make_config(

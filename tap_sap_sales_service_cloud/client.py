@@ -13,6 +13,7 @@ Reference:
 """
 
 from datetime import datetime, timedelta, timezone
+import re
 from typing import Any, Dict, Mapping, Optional, Tuple
 
 import backoff
@@ -33,6 +34,18 @@ REQUEST_TIMEOUT = 300
 
 # Default OData service path for the main SAP C4C CRM data API.
 DEFAULT_ODATA_PATH = "/sap/c4c/odata/v1/c4codataapi"
+API_SERVER_PATTERN = re.compile(
+    r"^https://[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?\.crm\.ondemand\.com/?$"
+)
+
+
+def validate_api_server(api_server: str) -> None:
+    """Reject API servers outside the SAP Sales and Service Cloud domain."""
+    if not isinstance(api_server, str) or not API_SERVER_PATTERN.fullmatch(api_server):
+        raise ValueError(
+            "api_server must be an HTTPS SAP tenant URL ending in "
+            ".crm.ondemand.com"
+        )
 
 
 def raise_for_error(response: requests.Response) -> None:
@@ -82,6 +95,7 @@ class SAPSalesServiceCloudClient:
 
     def __init__(self, config: Dict) -> None:
         self.config = config
+        validate_api_server(config["api_server"])
         self.base_url = config["api_server"].rstrip("/")
         self.odata_path = config.get("odata_path", DEFAULT_ODATA_PATH).rstrip("/")
         self.request_timeout = int(config.get("request_timeout", REQUEST_TIMEOUT))
