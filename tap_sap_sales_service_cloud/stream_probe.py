@@ -168,7 +168,11 @@ def probe_stream(
     )
     def _get() -> requests.Response:
         return requests.get(
-            url, headers=headers, params=params, timeout=_PROBE_TIMEOUT
+            url,
+            headers=headers,
+            params=params,
+            timeout=_PROBE_TIMEOUT,
+            allow_redirects=False,
         )
 
     try:
