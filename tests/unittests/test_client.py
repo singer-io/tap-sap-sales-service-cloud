@@ -12,7 +12,7 @@ from tap_sap_sales_service_cloud.client import (DEFAULT_ODATA_PATH,
                                                 raise_for_error)
 from tap_sap_sales_service_cloud.exceptions import (
     SAPSalesServiceCloudBadRequestError, SAPSalesServiceCloudRateLimitError,
-    SAPSalesServiceCloudUnauthorizedError)
+    SAPSalesServiceCloudServer5xxError, SAPSalesServiceCloudUnauthorizedError)
 
 
 def _make_config(**kwargs):
@@ -45,6 +45,22 @@ def _server_error_response():
     resp = MagicMock()
     resp.status_code = 500
     resp.json.return_value = {}
+    return resp
+
+
+def _null_filter_error_response():
+    resp = MagicMock()
+    resp.status_code = 500
+    resp.json.return_value = {
+        "error": {
+            "message": {
+                "value": (
+                    "Issue occurred during query execution in TREX "
+                    "(23000): exception 70023000: rootWhere == nullptr"
+                )
+            }
+        }
+    }
     return resp
 
 
@@ -181,3 +197,16 @@ class TestMakeRequestBackoff(unittest.TestCase):
                 "GET", "https://my123456.crm.ondemand.com/test"
             )
         self.assertEqual(mock_request.call_count, 5)
+
+    @mock.patch("time.sleep")
+    @mock.patch("requests.Session.request")
+    def test_trex_nullptr_error_gives_up_without_retry(
+            self, mock_request, _mock_sleep):
+        """Deterministic TREX 'rootWhere == nullptr' 500s must not retry."""
+        mock_request.return_value = _null_filter_error_response()
+        client = SAPSalesServiceCloudClient(_make_config())
+        with self.assertRaises(SAPSalesServiceCloudServer5xxError):
+            client._make_request(
+                "GET", "https://my123456.crm.ondemand.com/test"
+            )
+        self.assertEqual(mock_request.call_count, 1)

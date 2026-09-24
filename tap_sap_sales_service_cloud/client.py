@@ -77,6 +77,17 @@ def raise_for_error(response: requests.Response) -> None:
     )
 
 
+# TREX raises this deterministically whenever a '<field> eq null' filter
+# reaches certain HANA-view-backed entities (e.g. Lead) — retrying the same
+# request is guaranteed to fail identically, so back-off should give up
+# immediately and let the caller fall back to a non-null-inclusive filter.
+def _is_non_retryable_null_filter_error(exc: Exception) -> bool:
+    """ Checks for a nullptr message or TREX-specific 70023000 error
+        indicating a non-retryable null filter."""
+    msg = getattr(exc, "message", "") or str(exc)
+    return "rootWhere == nullptr" in msg or "70023000" in msg
+
+
 class SAPSalesServiceCloudClient:
     """Authenticated HTTP client for SAP Sales and Service Cloud OData API."""
 
@@ -204,6 +215,7 @@ class SAPSalesServiceCloudClient:
         ),
         max_tries=5,
         factor=2,
+        giveup=_is_non_retryable_null_filter_error,
     )
     def _make_request(
         self,

@@ -29,6 +29,13 @@ For each discovered entity set:
 | Replication method  | `INCREMENTAL` when replication key found, else `FULL_TABLE`             |
 | Pagination          | OData `d.__next` traversal                                              |
 
+For `INCREMENTAL` streams, records whose replication-key field is `NULL` in
+the source (e.g. legacy rows that predate change-tracking) are always
+included via an `<key> eq null or <key> ge <bookmark>` `$filter` clause —
+SAP's OData service otherwise excludes `NULL` from `ge` comparisons
+regardless of `start_date`. These rows have no comparable timestamp, so they
+are re-fetched on every run and never advance the bookmark.
+
 ---
 
 ## Authentication
@@ -61,6 +68,30 @@ See [SAP Authentication docs](https://help.sap.com/docs/sap-cloud-for-customer/o
 for full details.
 
 ---
+
+## Custom OData Service Path
+
+By default the tap discovers and syncs the standard C4C OData API at
+`/sap/c4c/odata/v1/c4codataapi`. Some tenants also expose custom OData
+services (e.g. Account Plan, Market Intelligence) under separate paths.
+Point the tap at one of these instead via the optional `odata_path` config
+key — the tap connects to whichever service path is configured and
+discovers all entity sets exposed there:
+
+```json
+{
+  "api_server": "https://myXXXXXX.crm.ondemand.com",
+  "username": "your_user@tenant",
+  "password": "your_password",
+  "start_date": "2024-01-01T00:00:00Z",
+  "odata_path": "/sap/c4c/odata/cust/v1/accountplanodata"
+}
+```
+
+Only one `odata_path` is active per tap connection/config. To sync the
+standard API alongside one or more custom services, set up a separate
+connection (config file) per service, each pointing at the same
+`api_server` with a different `odata_path`
 
 ## Quick Start
 
