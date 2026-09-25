@@ -3,7 +3,7 @@ from setuptools import find_packages, setup
 
 setup(
     name="tap-sap-sales-service-cloud",
-    version="0.0.2",
+    version="0.0.3",
     description="Singer.io tap for extracting data from SAP Sales and Service Cloud OData v2 APIs",
     author="Singer Community",
     url="http://singer.io",

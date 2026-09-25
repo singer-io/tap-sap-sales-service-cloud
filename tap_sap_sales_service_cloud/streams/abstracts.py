@@ -20,6 +20,10 @@ from singer import (Transformer, get_bookmark, get_logger, metadata, metrics,
                     write_bookmark, write_record, write_schema)
 from singer.utils import strftime, strptime_with_tz
 
+from tap_sap_sales_service_cloud.exceptions import (
+    SAPSalesServiceCloudInternalServerError,
+)
+
 LOGGER = get_logger()
 
 # Regex for SAP OData V2 /Date(milliseconds±offset)/ values.
@@ -108,6 +112,11 @@ class BaseStream(ABC):
         self.metadata = metadata.to_map(catalog.metadata)
         self.child_to_sync = []
         self.effective_bookmark = None
+        # Some SAP C4C entities are backed by TREX/HANA search views (e.g.
+        # Lead) whose query builder crashes on the '(key eq null or ...)'
+        # construct. Set once get_records() detects that failure so later
+        # pages/parent-scoped calls skip straight to the plain 'ge' filter.
+        self._skip_null_filter = False
 
     # ------------------------------------------------------------------
     # Catalog helpers
@@ -141,14 +150,22 @@ class BaseStream(ABC):
             # Edm.DateTime       -> datetime'...' (no tz suffix)
             if self.replication_key_edm_type == "Edm.DateTimeOffset":
                 fval = _format_odata_datetimeoffset(effective_dt)
-                params["$filter"] = (
-                    f"{key} ge datetimeoffset'{fval}'"
-                )
+                date_clause = f"{key} ge datetimeoffset'{fval}'"
             else:
                 fval = _format_odata_datetime(effective_dt)
-                params["$filter"] = (
-                    f"{key} ge datetime'{fval}'"
-                )
+                date_clause = f"{key} ge datetime'{fval}'"
+            if self._skip_null_filter:
+                params["$filter"] = date_clause
+            else:
+                # SAP applies three-valued (SQL-style) logic to 'ge'
+                # comparisons, so rows where the replication key is NULL
+                # never satisfy the filter and are silently excluded by the
+                # server — regardless of start_date. OR in an explicit
+                # 'eq null' clause so those rows are always returned; they
+                # can't be bookmarked incrementally, so they are re-fetched
+                # on every run (see sync()). Reverted per-stream by
+                # get_records() if the backend rejects this construct.
+                params["$filter"] = f"({key} eq null or {date_clause})"
 
         if parent_obj and self.parent_filter_field:
             parent_val = parent_obj[self.parent_key_field]
@@ -178,6 +195,23 @@ class BaseStream(ABC):
             params["$orderby"] = self.orderby_field
 
         return params
+
+    def _strip_null_inclusion_filter(self, filter_value: str) -> Optional[str]:
+        """Remove the '(key eq null or ...)' wrapper from *filter_value*.
+
+        Returns ``None`` when the wrapper isn't present (nothing to fall
+        back from), otherwise the filter with only the plain 'ge' clause.
+        """
+        key = self.replication_keys[0] if self.replication_keys else None
+        if not key:
+            return None
+        pattern = re.compile(
+            r"\(" + re.escape(key) + r" eq null or (?P<rest>.+?)\)"
+        )
+        match = pattern.search(filter_value)
+        if not match:
+            return None
+        return pattern.sub(match.group("rest"), filter_value, count=1)
 
     # ------------------------------------------------------------------
     # Bookmark helpers
@@ -332,11 +366,32 @@ class BaseStream(ABC):
         params = self.build_params(state, parent_obj)
         params["$expand"] = self.expand_nav_property
 
-        response = self.client.get(
-            expand_path,
-            params=params,
-            headers={"Authorization": self.client.get_auth_header()},
-        )
+        try:
+            response = self.client.get(
+                expand_path,
+                params=params,
+                headers={"Authorization": self.client.get_auth_header()},
+            )
+        except SAPSalesServiceCloudInternalServerError as exc:
+            fallback_filter = self._strip_null_inclusion_filter(
+                params.get("$filter", "")
+            )
+            if fallback_filter is None:
+                raise
+            LOGGER.warning(
+                "Stream '%s' — backend rejected the NULL-inclusive "
+                "$filter; retrying without it. Records with a NULL "
+                "replication key will not be captured. Error: %s",
+                self.tap_stream_id, exc,
+            )
+
+            self._skip_null_filter = True
+            params["$filter"] = fallback_filter
+            response = self.client.get(
+                expand_path,
+                params=params,
+                headers={"Authorization": self.client.get_auth_header()},
+            )
         if not response:
             return
 
@@ -380,13 +435,37 @@ class BaseStream(ABC):
             else:
                 params.pop("$inlinecount", None)
 
-            payload = self.client.get(
-                self.path,
-                params=params,
-                headers={
-                    "Authorization": self.client.get_auth_header()
-                },
-            )
+            try:
+                payload = self.client.get(
+                    self.path,
+                    params=params,
+                    headers={
+                        "Authorization": self.client.get_auth_header()
+                    },
+                )
+            except SAPSalesServiceCloudInternalServerError as exc:
+                fallback_filter = self._strip_null_inclusion_filter(
+                    params.get("$filter", "")
+                )
+                if fallback_filter is None:
+                    raise
+                LOGGER.warning(
+                    "Stream '%s' — backend rejected the NULL-inclusive "
+                    "$filter (likely a TREX/HANA-view-backed entity); "
+                    "retrying without it. Records with a NULL "
+                    "replication key will not be captured for this "
+                    "stream. Error: %s",
+                    self.tap_stream_id, exc,
+                )
+                self._skip_null_filter = True
+                params["$filter"] = fallback_filter
+                payload = self.client.get(
+                    self.path,
+                    params=params,
+                    headers={
+                        "Authorization": self.client.get_auth_header()
+                    },
+                )
 
             if not payload:
                 break
@@ -479,10 +558,13 @@ class BaseStream(ABC):
                     if bookmark_key
                     else None
                 )
-                if bookmark_key and bookmark:
-                    record_passes_bookmark = bool(
-                        record_value and record_value >= bookmark
-                    )
+                # A NULL replication-key value can never be compared against
+                # the bookmark. Such rows are only fetched via the $filter's
+                # 'eq null' clause, so pass them through here rather than
+                # dropping them a second time; they simply won't advance
+                # current_max_bookmark below.
+                if bookmark_key and bookmark and record_value:
+                    record_passes_bookmark = record_value >= bookmark
 
                 if record_passes_bookmark:
                     if self.is_selected():
