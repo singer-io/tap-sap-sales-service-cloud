@@ -414,3 +414,12 @@ class TestProbeStream(unittest.TestCase):
                      extra_params={"$filter": "ChangedOn ge datetimeoffset'2024-01-01T00:00:00Z'"})
         _, kwargs = mock_get.call_args
         self.assertIn("$filter", kwargs["params"])
+
+    @patch("tap_sap_sales_service_cloud.stream_probe.requests.get")
+    def test_disables_redirects(self, mock_get):
+        resp = MagicMock()
+        resp.status_code = 200
+        mock_get.return_value = resp
+        probe_stream("s", "https://example.com", "/S", "Basic x")
+        _, kwargs = mock_get.call_args
+        self.assertFalse(kwargs["allow_redirects"])

@@ -9,7 +9,9 @@ from parameterized import parameterized
 from tap_sap_sales_service_cloud.client import (DEFAULT_ODATA_PATH,
                                                 REQUEST_TIMEOUT,
                                                 SAPSalesServiceCloudClient,
-                                                raise_for_error)
+                                                raise_for_error,
+                                                validate_api_server,
+                                                validate_odata_path)
 from tap_sap_sales_service_cloud.exceptions import (
     SAPSalesServiceCloudBadRequestError, SAPSalesServiceCloudRateLimitError,
     SAPSalesServiceCloudServer5xxError, SAPSalesServiceCloudUnauthorizedError)
@@ -67,6 +69,25 @@ def _null_filter_error_response():
 class TestClientInit(unittest.TestCase):
     """Tests for SAPSalesServiceCloudClient construction."""
 
+    @parameterized.expand([
+        "https://my123456.crm.ondemand.com",
+        "https://my123456.crm.ondemand.com/",
+    ])
+    def test_accepts_sap_api_server(self, api_server):
+        validate_api_server(api_server)
+
+    @parameterized.expand([
+        "http://my123456.crm.ondemand.com",
+        "https://evil.example",
+        "https://my123456.crm.ondemand.com.evil.example",
+        "https://my123456.crm.ondemand.com/path",
+        "https://my123456.crm.ondemand.com:443",
+        "https://my123456.crm.ondemand.com?target=evil.example",
+    ])
+    def test_rejects_non_sap_api_server(self, api_server):
+        with self.assertRaises(ValueError):
+            SAPSalesServiceCloudClient(_make_config(api_server=api_server))
+
     def test_base_url_trailing_slash_stripped(self):
         config = _make_config(
             api_server="https://my123456.crm.ondemand.com/"
@@ -82,6 +103,24 @@ class TestClientInit(unittest.TestCase):
         config = _make_config(odata_path="/sap/c4c/odata/v1/custom")
         client = SAPSalesServiceCloudClient(config)
         self.assertEqual(client.odata_path, "/sap/c4c/odata/v1/custom")
+
+    @parameterized.expand([
+        "/sap/c4c/odata/v1/custom",
+        "/sap/c4c/odata/v1/custom/",
+    ])
+    def test_accepts_relative_odata_path(self, odata_path):
+        validate_odata_path(odata_path)
+
+    @parameterized.expand([
+        "@evil.example",
+        "sap/c4c/odata/v1/custom",
+        "https://evil.example/sap/c4c/odata/v1/custom",
+        "//evil.example/sap/c4c/odata/v1/custom",
+        123,
+    ])
+    def test_rejects_non_relative_odata_path(self, odata_path):
+        with self.assertRaises(ValueError):
+            SAPSalesServiceCloudClient(_make_config(odata_path=odata_path))
 
     def test_default_request_timeout(self):
         client = SAPSalesServiceCloudClient(_make_config())
@@ -185,6 +224,7 @@ class TestMakeRequestBackoff(unittest.TestCase):
         )
         self.assertEqual(result, {"d": {}})
         self.assertEqual(mock_request.call_count, 2)
+        self.assertFalse(mock_request.call_args.kwargs["allow_redirects"])
 
     @mock.patch("time.sleep")
     @mock.patch("requests.Session.request")
@@ -198,6 +238,23 @@ class TestMakeRequestBackoff(unittest.TestCase):
             )
         self.assertEqual(mock_request.call_count, 5)
 
+    @mock.patch("requests.Session.post")
+    def test_refresh_token_disables_redirects(self, mock_post):
+        response = _ok_response()
+        response.json.return_value = {"access_token": "abc", "expires_in": 3600}
+        mock_post.return_value = response
+        config = _make_config()
+        del config["username"]
+        del config["password"]
+        config.update({
+            "client_id": "id",
+            "client_secret": "secret",
+            "refresh_token": "refresh",
+        })
+        client = SAPSalesServiceCloudClient(config)
+        client.refresh_access_token()
+        self.assertFalse(mock_post.call_args.kwargs["allow_redirects"])
+        
     @mock.patch("time.sleep")
     @mock.patch("requests.Session.request")
     def test_trex_nullptr_error_gives_up_without_retry(

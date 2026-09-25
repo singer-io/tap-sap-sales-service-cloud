@@ -13,7 +13,9 @@ Reference:
 """
 
 from datetime import datetime, timedelta, timezone
+import re
 from typing import Any, Dict, Mapping, Optional, Tuple
+from urllib.parse import urlsplit
 
 import backoff
 import requests
@@ -33,6 +35,33 @@ REQUEST_TIMEOUT = 300
 
 # Default OData service path for the main SAP C4C CRM data API.
 DEFAULT_ODATA_PATH = "/sap/c4c/odata/v1/c4codataapi"
+API_SERVER_PATTERN = re.compile(
+    r"^https://[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?\.crm\.ondemand\.com/?$"
+)
+
+
+def validate_api_server(api_server: str) -> None:
+    """Reject API servers outside the SAP Sales and Service Cloud domain."""
+    if not isinstance(api_server, str) or not API_SERVER_PATTERN.fullmatch(api_server):
+        raise ValueError(
+            "api_server must be an HTTPS SAP tenant URL ending in "
+            ".crm.ondemand.com"
+        )
+
+
+def validate_odata_path(odata_path: str) -> None:
+    """Reject OData paths that can alter the validated API authority."""
+    if not isinstance(odata_path, str):
+        raise ValueError("odata_path must be a relative URL path")
+
+    parsed = urlsplit(odata_path)
+    if (
+        not odata_path.startswith("/")
+        or odata_path.startswith("//")
+        or parsed.scheme
+        or parsed.netloc
+    ):
+        raise ValueError("odata_path must be a relative URL path")
 
 
 def raise_for_error(response: requests.Response) -> None:
@@ -93,8 +122,11 @@ class SAPSalesServiceCloudClient:
 
     def __init__(self, config: Dict) -> None:
         self.config = config
+        validate_api_server(config["api_server"])
+        odata_path = config.get("odata_path", DEFAULT_ODATA_PATH)
+        validate_odata_path(odata_path)
         self.base_url = config["api_server"].rstrip("/")
-        self.odata_path = config.get("odata_path", DEFAULT_ODATA_PATH).rstrip("/")
+        self.odata_path = odata_path.rstrip("/")
         self.request_timeout = int(config.get("request_timeout", REQUEST_TIMEOUT))
 
         self._session = requests.Session()
@@ -136,6 +168,7 @@ class SAPSalesServiceCloudClient:
             data=payload,
             headers={"Content-Type": "application/x-www-form-urlencoded"},
             timeout=self.request_timeout,
+            allow_redirects=False,
         )
         raise_for_error(response)
         response_json = response.json()
@@ -226,6 +259,7 @@ class SAPSalesServiceCloudClient:
     ) -> Optional[Mapping[Any, Any]]:
         """Execute an HTTP request; back-off decorators handle retries."""
         kwargs.setdefault("timeout", self.request_timeout)
+        kwargs.setdefault("allow_redirects", False)
         with metrics.http_request_timer(endpoint):
             response = self._session.request(method, endpoint, **kwargs)
 
