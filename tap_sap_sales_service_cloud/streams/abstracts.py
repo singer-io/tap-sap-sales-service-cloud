@@ -90,6 +90,13 @@ class BaseStream(ABC):
     # keyword: 'Edm.DateTimeOffset' -> datetimeoffset'...' else datetime'...'
     replication_key_edm_type: str = ""
 
+    # True when replication_keys[0] is synthesized from the parent's own
+    # replication key (no native replication key exists on this entity).
+    # Such a field does not exist on SAP's side, so it must never be sent
+    # as an OData $filter — only used for client-side bookmark comparison.
+    synthetic_replication_key: bool = False
+    parent_replication_key: str = ""
+
     path: str = ""
 
     def __init__(self, client=None, catalog=None) -> None:
@@ -136,7 +143,11 @@ class BaseStream(ABC):
         """Build OData query parameters for a single page fetch."""
         params: Dict[str, Any] = {}
 
-        if self.replication_method == "INCREMENTAL" and self.replication_keys:
+        if (
+            self.replication_method == "INCREMENTAL"
+            and self.replication_keys
+            and not self.synthetic_replication_key
+        ):
             key = self.replication_keys[0]
             bookmark = self.effective_bookmark or self.get_bookmark(
                 state, self.tap_stream_id, key
@@ -352,6 +363,12 @@ class BaseStream(ABC):
             record[self.parent_filter_field] = parent_pk_value
         parent_id_field = f"__parent_{self.parent}_{parent_pk_field}"
         record[parent_id_field] = parent_pk_value
+
+        if self.synthetic_replication_key and self.replication_keys:
+            record[self.replication_keys[0]] = _parent_record.get(
+                self.parent_replication_key
+            )
+
         return record
 
     # ------------------------------------------------------------------

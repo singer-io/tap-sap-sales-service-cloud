@@ -160,9 +160,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "advanced_kpi_valuation_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"store_valuation_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "store_valuation_collection",
             },
             "advanced_kpi_valuation_kpi_usage_type_code_collection": {
@@ -179,9 +179,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "answer_attachment_reference_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"response_item_collection_response_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "response_item_collection",
             },
             "answer_attachment_type_code_collection": {
@@ -192,16 +192,16 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "answer_options_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"questions_collection_survey_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "questions_collection",
             },
             "answers_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"response_item_collection_response_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "response_item_collection",
             },
             "appointment_attachment_folder_category_code_collection": {
@@ -236,9 +236,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "appointment_btd_reference_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"appointment_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "appointment_collection",
             },
             "appointment_btd_reference_type_code_collection": {
@@ -309,9 +309,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "appointment_involved_parties_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"appointment_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "appointment_collection",
             },
             "appointment_involved_parties_party_type_code_collection": {
@@ -340,9 +340,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "appointment_other_parties_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"appointment_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "appointment_collection",
             },
             "appointment_other_parties_role_category_code_collection": {
@@ -402,9 +402,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "branching_conditions_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"questions_collection_survey_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "questions_collection",
             },
             "business_attribute_assignment_collection": {
@@ -421,9 +421,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "business_attribute_assignment_item_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"business_attribute_assignment_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "business_attribute_assignment_collection",
             },
             "business_attribute_assignment_itemlanguage_code_collection": {
@@ -446,9 +446,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "business_attribute_characteristic_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"business_attribute_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "business_attribute_collection",
             },
             "business_attribute_collection": {
@@ -459,9 +459,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "business_attribute_description_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"business_attribute_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "business_attribute_collection",
             },
             "business_attribute_description_description_language_code_collection": {
@@ -490,9 +490,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "business_attribute_set_attribute_assignment_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"business_attribute_set_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "business_attribute_set_collection",
             },
             "business_attribute_set_business_attribute_set_description_language_code_collection": {
@@ -521,9 +521,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "business_attribute_set_description_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"business_attribute_set_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "business_attribute_set_collection",
             },
             "business_attribute_set_description_description_language_code_collection": {
@@ -552,16 +552,16 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "business_attribute_value_list_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"business_attribute_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "business_attribute_collection",
             },
             "business_attribute_value_list_description_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"business_attribute_value_list_collection_business_attribute_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "business_attribute_value_list_collection",
             },
             "business_attribute_value_list_description_value_description_language_code_collection": {
@@ -620,9 +620,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "business_partner_relationship_competitor_product_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"business_partner_relationship_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "business_partner_relationship_collection",
             },
             "business_partner_relationship_distribution_channel_code_collection": {
@@ -759,16 +759,16 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "buying_center_relationship_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"buying_center_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "buying_center_collection",
             },
             "calculation_kpi_valuation_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"store_valuation_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "store_valuation_collection",
             },
             "campaign_attachments_category_code_collection": {
@@ -803,9 +803,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "campaign_inbound_business_transaction_document_reference_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"campaign_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "campaign_collection",
             },
             "campaign_inbound_business_transaction_document_reference_reaction_type_code_collection": {
@@ -1036,9 +1036,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "chat_activity_parties_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"chat_activity_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "chat_activity_collection",
             },
             "chat_activity_parties_party_type_code_collection": {
@@ -1194,9 +1194,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "cod_time_report_party_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"cod_time_report_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "cod_time_report_collection",
             },
             "cod_time_report_party_determination_method_code_collection": {
@@ -1274,9 +1274,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "comparison_kpi_valuation_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"store_valuation_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "store_valuation_collection",
             },
             "competitor_best_reached_by_code_collection": {
@@ -1391,9 +1391,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "competitor_sales_organisation_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"competitor_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "competitor_collection",
             },
             "competitor_status_code_collection": {
@@ -1512,9 +1512,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "contact_international_version_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"contact_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "contact_collection",
             },
             "contact_international_version_international_version_code_collection": {
@@ -1585,9 +1585,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "contact_personal_address_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"contact_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "contact_collection",
             },
             "contact_personal_address_country_code_collection": {
@@ -1701,9 +1701,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "contract_covered_object_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"contract_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "contract_collection",
             },
             "contract_currency_code_collection": {
@@ -1883,9 +1883,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "contract_item_covered_object_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"contract_item_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "contract_item_collection",
             },
             "contract_item_delivery_priority_code_collection": {
@@ -1902,9 +1902,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "contract_item_entitled_product_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"contract_item_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "contract_item_collection",
             },
             "contract_item_external_contract_invoice_processing_status_code_collection": {
@@ -2023,9 +2023,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "contract_item_party_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"contract_item_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "contract_item_collection",
             },
             "contract_item_party_correspondence_language_code_collection": {
@@ -2139,9 +2139,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "contract_item_usage_restriction_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"contract_item_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "contract_item_collection",
             },
             "contract_item_usage_restriction_usage_restriction_code_collection": {
@@ -2176,9 +2176,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "contract_party_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"contract_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "contract_collection",
             },
             "contract_party_correspondence_language_code_collection": {
@@ -2237,9 +2237,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "contract_reference_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"contract_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "contract_collection",
             },
             "contract_reference_item_type_code_collection": {
@@ -2299,9 +2299,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "corporate_account_address_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"corporate_account_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "corporate_account_collection",
             },
             "corporate_account_address_country_code_collection": {
@@ -2426,9 +2426,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "corporate_account_identification_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"corporate_account_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "corporate_account_collection",
             },
             "corporate_account_identification_country_code_collection": {
@@ -2457,9 +2457,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "corporate_account_international_version_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"corporate_account_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "corporate_account_collection",
             },
             "corporate_account_international_version_country_code_collection": {
@@ -2639,9 +2639,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "corporate_account_tax_number_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"corporate_account_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "corporate_account_collection",
             },
             "corporate_account_tax_number_country_code_collection": {
@@ -2658,9 +2658,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "corporate_account_team_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"corporate_account_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "corporate_account_collection",
             },
             "corporate_account_team_distribution_channel_code_collection": {
@@ -2702,23 +2702,23 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "corporate_account_visiting_hours_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"corporate_account_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "corporate_account_collection",
             },
             "corporate_account_visiting_hours_operating_period_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"corporate_account_visiting_hours_recurrence_collection_corporate_account_visiting_hours_collection_corporate_account_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "corporate_account_visiting_hours_recurrence_collection",
             },
             "corporate_account_visiting_hours_recurrence_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"corporate_account_visiting_hours_collection_corporate_account_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "corporate_account_visiting_hours_collection",
             },
             "corporate_account_visiting_hours_time_zone_code_collection": {
@@ -2783,9 +2783,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "customer_order_business_transaction_document_reference_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"customer_order_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "customer_order_collection",
             },
             "customer_order_business_transaction_document_reference_role_code_collection": {
@@ -3006,9 +3006,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "customer_order_item_business_transaction_document_reference_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"customer_order_item_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "customer_order_item_collection",
             },
             "customer_order_item_business_transaction_document_reference_item_type_code_collection": {
@@ -3152,16 +3152,16 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "customer_order_item_party_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"customer_order_item_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "customer_order_item_collection",
             },
             "customer_order_item_party_contact_party_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"customer_order_item_party_collection_customer_order_item_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "customer_order_item_party_collection",
             },
             "customer_order_item_party_contact_party_country_code_collection": {
@@ -3353,9 +3353,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "customer_order_item_total_values_pricing_subtotal_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"customer_order_item_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "customer_order_item_collection",
             },
             "customer_order_item_total_values_pricing_subtotal_currency_code_collection": {
@@ -3420,16 +3420,16 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "customer_order_party_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"customer_order_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "customer_order_collection",
             },
             "customer_order_party_contact_party_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"customer_order_party_collection_customer_order_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "customer_order_party_collection",
             },
             "customer_order_party_contact_party_country_code_collection": {
@@ -3584,9 +3584,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "customer_order_registered_product_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"customer_order_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "customer_order_collection",
             },
             "customer_order_replication_processing_status_code_collection": {
@@ -3640,9 +3640,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "deal_btd_ref_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"deal_registration_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "deal_registration_collection",
             },
             "deal_btd_ref_type_code_collection": {
@@ -3720,9 +3720,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "e_mail_btd_reference_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"e_mail_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "e_mail_collection",
             },
             "e_mail_btd_reference_role_code_collection": {
@@ -3745,9 +3745,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "e_mail_cc_recipients_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"e_mail_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "e_mail_collection",
             },
             "e_mail_cc_recipients_name_language_code_collection": {
@@ -3794,9 +3794,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "e_mail_involved_parties_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"e_mail_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "e_mail_collection",
             },
             "e_mail_involved_parties_party_type_code_collection": {
@@ -3838,9 +3838,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "e_mail_sender_party_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"e_mail_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "e_mail_collection",
             },
             "e_mail_sentiment_type_code_collection": {
@@ -3857,9 +3857,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "e_mail_to_recipients_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"e_mail_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "e_mail_collection",
             },
             "e_mail_to_recipients_name_language_code_collection": {
@@ -3876,16 +3876,16 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "element_rating_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"questions_collection_survey_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "questions_collection",
             },
             "element_response_option_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"questions_collection_survey_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "questions_collection",
             },
             "employee_academic_title_code_collection": {
@@ -4016,9 +4016,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "employee_sales_responsibility_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"employee_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "employee_collection",
             },
             "employee_sales_responsibility_distribution_channel_code_collection": {
@@ -4103,23 +4103,23 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "employee_working_hours_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"employee_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "employee_collection",
             },
             "employee_working_hours_operating_period_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"employee_working_hours_recurrence_collection_employee_working_hours_collection_employee_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "employee_working_hours_recurrence_collection",
             },
             "employee_working_hours_recurrence_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"employee_working_hours_collection_employee_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "employee_working_hours_collection",
             },
             "employee_working_hours_time_zone_code_collection": {
@@ -4160,9 +4160,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "functional_location_description_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"installation_point_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "installation_point_collection",
             },
             "functional_location_description_language_code_collection": {
@@ -4185,9 +4185,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "individual_customer_address_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"individual_customer_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "individual_customer_collection",
             },
             "individual_customer_address_country_code_collection": {
@@ -4306,9 +4306,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "individual_customer_identification_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"individual_customer_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "individual_customer_collection",
             },
             "individual_customer_identification_country_code_collection": {
@@ -4488,9 +4488,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "individual_customer_tax_number_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"individual_customer_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "individual_customer_collection",
             },
             "individual_customer_tax_number_country_code_collection": {
@@ -4507,9 +4507,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "individual_customer_team_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"individual_customer_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "individual_customer_collection",
             },
             "individual_customer_team_distribution_channel_code_collection": {
@@ -4659,9 +4659,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "installation_point_other_contact_party_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"installation_point_party_collection_installation_point_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "installation_point_party_collection",
             },
             "installation_point_other_contact_party_role_code_collection": {
@@ -4672,9 +4672,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "installation_point_party_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"installation_point_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "installation_point_collection",
             },
             "installation_point_party_information_role_code_collection": {
@@ -4758,9 +4758,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "installed_base_competitor_product_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"installed_base_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "installed_base_collection",
             },
             "installed_base_contact_parties_role_code_collection": {
@@ -4777,9 +4777,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "installed_base_description_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"installed_base_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "installed_base_collection",
             },
             "installed_base_description_language_code_collection": {
@@ -4827,9 +4827,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "installed_base_other_contact_parties_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"installed_base_other_parties_collection_installed_base_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "installed_base_other_parties_collection",
             },
             "installed_base_other_contact_parties_role_code_collection": {
@@ -4840,9 +4840,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "installed_base_other_parties_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"installed_base_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "installed_base_collection",
             },
             "installed_base_other_parties_role_code_collection": {
@@ -4957,9 +4957,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "internal_price_list_scale_lines_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"internal_price_discount_list_items_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "internal_price_discount_list_items_collection",
             },
             "job_definition_attachment_folder_category_code_collection": {
@@ -5072,9 +5072,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "lead_business_transaction_document_reference_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"lead_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "lead_collection",
             },
             "lead_business_transaction_document_reference_item_type_code_collection": {
@@ -5121,9 +5121,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "lead_contact_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"lead_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "lead_collection",
             },
             "lead_contact_correspondence_language_code_collection": {
@@ -5164,9 +5164,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "lead_event_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"lead_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "lead_collection",
             },
             "lead_event_event_source_code_collection": {
@@ -5189,9 +5189,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "lead_external_party_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"lead_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "lead_collection",
             },
             "lead_external_party_party_type_code_collection": {
@@ -5214,9 +5214,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "lead_historical_version_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"lead_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "lead_collection",
             },
             "lead_historical_version_conversion_target_type_code_collection": {
@@ -5317,9 +5317,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "lead_installed_object_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"lead_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "lead_collection",
             },
             "lead_installed_object_leading_installed_object_type_code_collection": {
@@ -5464,9 +5464,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "lead_sales_and_marketing_team_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"lead_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "lead_collection",
             },
             "lead_sales_and_marketing_team_party_type_code_collection": {
@@ -5597,16 +5597,16 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "memo_activity_business_transaction_document_reference_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"activity_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "activity_collection",
             },
             "memo_activity_party_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"activity_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "activity_collection",
             },
             "memo_activity_text_collection": {
@@ -5629,9 +5629,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "opportunity_account_team_party_deprecated_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"opportunity_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "opportunity_collection",
             },
             "opportunity_account_team_party_deprecated_role_code_collection": {
@@ -5666,9 +5666,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "opportunity_business_transaction_document_reference_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"opportunity_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "opportunity_collection",
             },
             "opportunity_business_transaction_document_reference_item_type_code_collection": {
@@ -5709,9 +5709,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "opportunity_competitor_party_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"opportunity_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "opportunity_collection",
             },
             "opportunity_competitor_party_role_code_collection": {
@@ -5722,9 +5722,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "opportunity_competitor_product_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"opportunity_competitor_party_collection_opportunity_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "opportunity_competitor_party_collection",
             },
             "opportunity_consistency_status_code_collection": {
@@ -5747,9 +5747,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "opportunity_end_buyer_party_contact_party_deprecated_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"opportunity_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "opportunity_collection",
             },
             "opportunity_expected_revenue_amount_currency_code_collection": {
@@ -5760,9 +5760,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "opportunity_external_party_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"opportunity_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "opportunity_collection",
             },
             "opportunity_external_party_role_category_code_collection": {
@@ -5791,9 +5791,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "opportunity_historical_version_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"opportunity_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "opportunity_collection",
             },
             "opportunity_historical_version_control_phase_code_collection": {
@@ -5852,9 +5852,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "opportunity_installed_object_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"opportunity_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "opportunity_collection",
             },
             "opportunity_item_attachment_folder_category_code_collection": {
@@ -5908,9 +5908,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "opportunity_item_party_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"opportunity_item_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "opportunity_item_collection",
             },
             "opportunity_item_party_party_type_code_collection": {
@@ -5933,9 +5933,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "opportunity_item_quantity_plan_reporting_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"opportunity_item_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "opportunity_item_collection",
             },
             "opportunity_item_quantity_plan_reporting_distribution_quantity_unit_code_collection": {
@@ -5958,9 +5958,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "opportunity_item_revenue_plan_reporting_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"opportunity_item_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "opportunity_item_collection",
             },
             "opportunity_item_revenue_plan_reporting_distribution_amount_currency_code_collection": {
@@ -5996,9 +5996,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "opportunity_other_party_deprecated_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"opportunity_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "opportunity_collection",
             },
             "opportunity_other_party_deprecated_role_category_code_collection": {
@@ -6015,9 +6015,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "opportunity_party_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"opportunity_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "opportunity_collection",
             },
             "opportunity_party_contact_party_attitude_toward_opportunity_code_collection": {
@@ -6028,9 +6028,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "opportunity_party_contact_party_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"opportunity_external_party_collection_opportunity_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "opportunity_external_party_collection",
             },
             "opportunity_party_contact_party_role_code_collection": {
@@ -6059,9 +6059,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "opportunity_payer_party_contact_party_deprecated_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"opportunity_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "opportunity_collection",
             },
             "opportunity_phase_progress_evaluation_status_code_collection": {
@@ -6084,9 +6084,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "opportunity_product_recipient_party_contact_party_deprecated_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"opportunity_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "opportunity_collection",
             },
             "opportunity_prospect_budget_amount_currency_code_collection": {
@@ -6103,9 +6103,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "opportunity_prospect_party_contact_party_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"opportunity_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "opportunity_collection",
             },
             "opportunity_prospect_party_contact_party_role_code_collection": {
@@ -6122,9 +6122,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "opportunity_revenue_plan_header_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"opportunity_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "opportunity_collection",
             },
             "opportunity_revenue_plan_header_currency_code_collection": {
@@ -6141,9 +6141,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "opportunity_revenue_plan_reporting_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"opportunity_revenue_plan_header_collection_opportunity_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "opportunity_revenue_plan_header_collection",
             },
             "opportunity_revenue_plan_reporting_distribution_amount_currency_code_collection": {
@@ -6166,9 +6166,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "opportunity_sales_employee_party_deprecated_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"opportunity_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "opportunity_collection",
             },
             "opportunity_sales_employee_party_deprecated_role_category_code_collection": {
@@ -6191,9 +6191,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "opportunity_sales_partner_party_deprecated_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"opportunity_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "opportunity_collection",
             },
             "opportunity_sales_partner_party_deprecated_role_category_code_collection": {
@@ -6210,9 +6210,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "opportunity_sales_team_party_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"opportunity_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "opportunity_collection",
             },
             "opportunity_sales_team_party_role_category_code_collection": {
@@ -6260,16 +6260,16 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "organisational_unit_company_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"organisational_unit_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "organisational_unit_collection",
             },
             "organisational_unit_distribution_channel_and_division_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"organisational_unit_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "organisational_unit_collection",
             },
             "organisational_unit_distribution_channel_and_division_distribution_channel_code_collection": {
@@ -6299,9 +6299,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "organisational_unit_functions_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"organisational_unit_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "organisational_unit_collection",
             },
             "organisational_unit_functions_currency_code_collection": {
@@ -6318,16 +6318,16 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "organisational_unit_manager_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"organisational_unit_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "organisational_unit_collection",
             },
             "organisational_unit_name_and_address_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"organisational_unit_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "organisational_unit_collection",
             },
             "organisational_unit_name_and_address_country_code_collection": {
@@ -6374,9 +6374,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "organisational_unit_parent_organisational_unit_assignment_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"organisational_unit_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "organisational_unit_collection",
             },
             "partner_address_best_reached_by_code_collection": {
@@ -6387,9 +6387,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "partner_address_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"partner_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "partner_collection",
             },
             "partner_address_country_code_collection": {
@@ -6508,9 +6508,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "partner_contact_sales_responsibility_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"partner_contact_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "partner_contact_collection",
             },
             "partner_contact_sales_responsibility_distribution_channel_code_collection": {
@@ -6678,9 +6678,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "partner_sales_organisation_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"partner_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "partner_collection",
             },
             "partner_state_code_collection": {
@@ -6697,9 +6697,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "party_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"deal_registration_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "deal_registration_collection",
             },
             "party_party_type_code_collection": {
@@ -6740,9 +6740,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "phone_call_btd_reference_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"phone_call_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "phone_call_collection",
             },
             "phone_call_btd_reference_type_code_collection": {
@@ -6826,9 +6826,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "phone_call_participants_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"phone_call_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "phone_call_collection",
             },
             "phone_call_participants_name_language_code_collection": {
@@ -6839,9 +6839,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "phone_call_parties_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"phone_call_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "phone_call_collection",
             },
             "phone_call_parties_party_type_code_collection": {
@@ -6888,9 +6888,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "phone_call_worklist_item_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"phone_call_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "phone_call_collection",
             },
             "po_e_attachments_category_code_collection": {
@@ -6907,9 +6907,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "po_e_question_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"selling_point_valuation_collection_store_valuation_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "selling_point_valuation_collection",
             },
             "po_e_question_question_type_code_collection": {
@@ -6920,9 +6920,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "po_e_tasks_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"selling_point_valuation_collection_store_valuation_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "selling_point_valuation_collection",
             },
             "product_attachment_folder_category_code_collection": {
@@ -6945,9 +6945,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "product_business_partner_relation_business_partner_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"product_business_partner_relation_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "product_business_partner_relation_collection",
             },
             "product_business_partner_relation_category_code_collection": {
@@ -6970,9 +6970,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "product_business_partner_relation_processing_type_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"product_business_partner_relation_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "product_business_partner_relation_collection",
             },
             "product_business_partner_relation_processing_type_processing_type_code_collection": {
@@ -6983,9 +6983,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "product_business_partner_relation_product_category_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"product_business_partner_relation_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "product_business_partner_relation_collection",
             },
             "product_business_partner_relation_product_category_product_selling_type_code_collection": {
@@ -6996,9 +6996,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "product_business_partner_relation_product_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"product_business_partner_relation_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "product_business_partner_relation_collection",
             },
             "product_business_partner_relation_product_product_selling_type_code_collection": {
@@ -7021,23 +7021,23 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "product_business_partner_relation_required_product_category_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"product_business_partner_relation_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "product_business_partner_relation_collection",
             },
             "product_business_partner_relation_required_product_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"product_business_partner_relation_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "product_business_partner_relation_collection",
             },
             "product_business_partner_relation_sales_area_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"product_business_partner_relation_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "product_business_partner_relation_collection",
             },
             "product_business_partner_relation_sales_area_distribution_channel_code_collection": {
@@ -7054,23 +7054,23 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "product_business_partner_relation_sales_territory_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"product_business_partner_relation_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "product_business_partner_relation_collection",
             },
             "product_business_partner_relation_target_group_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"product_business_partner_relation_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "product_business_partner_relation_collection",
             },
             "product_business_partner_relation_team_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"product_business_partner_relation_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "product_business_partner_relation_collection",
             },
             "product_business_partner_relation_type_code_collection": {
@@ -7124,9 +7124,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "product_other_descriptions_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"product_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "product_collection",
             },
             "product_other_descriptions_language_collection": {
@@ -7137,16 +7137,16 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "product_plant_party_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"product_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "product_collection",
             },
             "product_quantity_characteristics_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"product_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "product_collection",
             },
             "product_quantity_characteristics_gross_weight_unit_code_collection": {
@@ -7193,9 +7193,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "product_quantity_conversion_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"product_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "product_collection",
             },
             "product_quantity_conversion_corresponding_qty_uom_collection": {
@@ -7212,9 +7212,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "product_sales_customer_part_number_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"product_sales_process_information_collection_product_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "product_sales_process_information_collection",
             },
             "product_sales_customer_part_number_distribution_channel_code_collection": {
@@ -7225,9 +7225,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "product_sales_process_information_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"product_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "product_collection",
             },
             "product_sales_process_information_distribution_channel_collection": {
@@ -7301,9 +7301,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "productl_global_trade_item_number_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"product_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "product_collection",
             },
             "productl_global_trade_item_number_gtin_unit_of_measure_collection": {
@@ -7386,9 +7386,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "promotion_party_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"promotion_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "promotion_collection",
             },
             "promotion_party_role_code_collection": {
@@ -7405,9 +7405,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "promotion_product_category_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"promotion_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "promotion_collection",
             },
             "promotion_product_category_unit_code_collection": {
@@ -7418,16 +7418,16 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "promotion_product_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"promotion_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "promotion_collection",
             },
             "promotion_product_group_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"promotion_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "promotion_collection",
             },
             "promotion_product_group_id_collection": {
@@ -7487,9 +7487,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "promotion_trade_spend_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"promotion_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "promotion_collection",
             },
             "promotion_trade_spend_off_invoice_capping_price_currency_code_collection": {
@@ -7536,9 +7536,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "question_answers_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"response_item_collection_response_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "response_item_collection",
             },
             "question_answers_question_type_code_collection": {
@@ -7573,9 +7573,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "question_responses_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"po_e_question_collection_selling_point_valuation_collection_store_valuation_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "po_e_question_collection",
             },
             "question_responses_question_type_code_collection": {
@@ -7586,9 +7586,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "questions_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"survey_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "survey_collection",
             },
             "questions_question_type_code_collection": {
@@ -7677,9 +7677,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "recurring_activity_party_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"recurring_activity_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "recurring_activity_collection",
             },
             "recurring_activity_party_party_type_code_collection": {
@@ -7823,9 +7823,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "registered_product_other_party_contact_parties_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"registered_product_party_information_collection_registered_product_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "registered_product_party_information_collection",
             },
             "registered_product_other_party_contact_parties_role_code_collection": {
@@ -7836,9 +7836,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "registered_product_party_information_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"registered_product_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "registered_product_collection",
             },
             "registered_product_party_information_role_code_collection": {
@@ -7917,9 +7917,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "response_attachment_header_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"survey_response_item_collection_survey_response_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "survey_response_item_collection",
             },
             "response_attachments_category_code_collection": {
@@ -7961,9 +7961,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "response_item_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"response_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "response_collection",
             },
             "response_valuation_collection_life_cycle_status_code_collection": {
@@ -8478,9 +8478,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "sales_quote_item_party_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"sales_quote_item_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "sales_quote_item_collection",
             },
             "sales_quote_item_party_correspondence_language_code_collection": {
@@ -8545,9 +8545,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "sales_quote_item_reference_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"sales_quote_item_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "sales_quote_item_collection",
             },
             "sales_quote_item_reference_item_type_code_collection": {
@@ -8570,9 +8570,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "sales_quote_item_schedule_line_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"sales_quote_item_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "sales_quote_item_collection",
             },
             "sales_quote_item_schedule_line_type_code_collection": {
@@ -8704,9 +8704,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "sales_quote_party_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"sales_quote_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "sales_quote_collection",
             },
             "sales_quote_party_company_postal_code_collection": {
@@ -8909,9 +8909,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "sales_quote_reference_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"sales_quote_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "sales_quote_collection",
             },
             "sales_quote_reference_item_type_code_collection": {
@@ -8922,9 +8922,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "sales_quote_reference_object_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"sales_quote_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "sales_quote_collection",
             },
             "sales_quote_reference_relationship_role_code_collection": {
@@ -8990,9 +8990,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "sales_quote_worklist_item_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"sales_quote_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "sales_quote_collection",
             },
             "sales_quotetime_zone_code_collection": {
@@ -9003,9 +9003,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "sales_territory_account_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"sales_territory_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "sales_territory_collection",
             },
             "sales_territory_collection": {
@@ -9041,9 +9041,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "selling_point_valuation_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"store_valuation_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "store_valuation_collection",
             },
             "service_agent_academic_title_code_collection": {
@@ -9319,9 +9319,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "service_category_catalogue_usage_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"service_category_catalogue_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "service_category_catalogue_collection",
             },
             "service_category_catalogue_usage_customer_problem_and_solution_processing_type_code_collection": {
@@ -9345,9 +9345,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "service_category_description_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"service_category_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "service_category_collection",
             },
             "service_category_descriptionlanguage_code_collection": {
@@ -9364,9 +9364,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "service_category_name_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"service_category_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "service_category_collection",
             },
             "service_category_namelanguage_code_collection": {
@@ -9419,9 +9419,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "service_request_business_transaction_document_reference_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"service_request_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "service_request_collection",
             },
             "service_request_business_transaction_document_reference_item_type_code_collection": {
@@ -9850,9 +9850,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "service_request_service_reference_object_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"service_request_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "service_request_collection",
             },
             "service_request_service_request_classification_code_collection": {
@@ -10027,9 +10027,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "social_media_user_profile_bupa_reference_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"social_media_user_profile_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "social_media_user_profile_collection",
             },
             "social_media_user_profile_bupa_reference_business_partner_category_code_collection": {
@@ -10052,9 +10052,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "social_media_user_profile_user_information_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"social_media_user_profile_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "social_media_user_profile_collection",
             },
             "social_media_user_profile_user_information_social_media_channel_code_collection": {
@@ -10071,9 +10071,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "stock_location_description_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"stock_location_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "stock_location_collection",
             },
             "stock_location_descriptionlanguage_code_collection": {
@@ -10102,9 +10102,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "stock_location_item_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"stock_location_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "stock_location_collection",
             },
             "stock_location_item_consignment_stock_in_quality_inspection_unit_code_collection": {
@@ -10151,9 +10151,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "survey_answer_value_range_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"survey_question_collection_survey_root_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "survey_question_collection",
             },
             "survey_attachments_category_code_collection": {
@@ -10170,9 +10170,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "survey_branching_condition_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"survey_question_collection_survey_root_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "survey_question_collection",
             },
             "survey_category_code_collection": {
@@ -10189,9 +10189,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "survey_competitor_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"survey_root_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "survey_root_collection",
             },
             "survey_competitor_party_role_category_code_collection": {
@@ -10226,16 +10226,16 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "survey_exception_condition_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"survey_root_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "survey_root_collection",
             },
             "survey_exception_condition_description_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"survey_exception_condition_collection_survey_root_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "survey_exception_condition_collection",
             },
             "survey_exception_condition_description_description_language_code_collection": {
@@ -10258,23 +10258,23 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "survey_follow_up_action_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"survey_root_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "survey_root_collection",
             },
             "survey_information_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"survey_root_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "survey_root_collection",
             },
             "survey_information_description_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"survey_information_collection_survey_root_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "survey_information_collection",
             },
             "survey_information_description_language_code_collection": {
@@ -10303,9 +10303,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "survey_name_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"survey_root_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "survey_root_collection",
             },
             "survey_name_language_code_collection": {
@@ -10316,16 +10316,16 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "survey_product_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"survey_root_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "survey_root_collection",
             },
             "survey_product_list_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"survey_root_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "survey_root_collection",
             },
             "survey_product_list_product_list_category_code_collection": {
@@ -10348,9 +10348,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "survey_question_answer_option_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"survey_question_collection_survey_root_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "survey_question_collection",
             },
             "survey_question_answer_option_currency_code_collection": {
@@ -10361,9 +10361,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "survey_question_answer_option_description_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"survey_question_answer_option_collection_survey_question_collection_survey_root_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "survey_question_answer_option_collection",
             },
             "survey_question_answer_option_description_description_language_code_collection": {
@@ -10392,9 +10392,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "survey_question_answers_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"survey_response_item_collection_survey_response_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "survey_response_item_collection",
             },
             "survey_question_answers_currency_code_collection": {
@@ -10417,9 +10417,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "survey_question_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"survey_root_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "survey_root_collection",
             },
             "survey_question_description_additional_information_language_code_collection": {
@@ -10430,9 +10430,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "survey_question_description_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"survey_question_collection_survey_root_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "survey_question_collection",
             },
             "survey_question_description_description_language_code_collection": {
@@ -10461,9 +10461,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "survey_question_planogram_attachment_type_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"survey_question_collection_survey_root_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "survey_question_collection",
             },
             "survey_question_question_category_code_collection": {
@@ -10480,16 +10480,16 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "survey_question_rating_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"survey_question_collection_survey_root_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "survey_question_collection",
             },
             "survey_question_rating_description_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"survey_question_rating_collection_survey_question_collection_survey_root_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "survey_question_rating_collection",
             },
             "survey_question_rating_description_description_language_code_collection": {
@@ -10506,16 +10506,16 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "survey_question_response_option_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"survey_question_collection_survey_root_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "survey_question_collection",
             },
             "survey_question_response_option_description_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"survey_question_response_option_collection_survey_question_collection_survey_root_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "survey_question_response_option_collection",
             },
             "survey_question_response_option_description_description_language_code_collection": {
@@ -10557,9 +10557,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "survey_response_item_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"survey_response_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "survey_response_collection",
             },
             "survey_response_life_cycle_status_code_collection": {
@@ -10630,9 +10630,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "surveys_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"selling_point_valuation_collection_store_valuation_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "selling_point_valuation_collection",
             },
             "target_group_collection": {
@@ -10649,9 +10649,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "target_group_member_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"target_group_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "target_group_collection",
             },
             "target_group_notes_collection": {
@@ -10693,9 +10693,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "tasks_btd_reference_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"tasks_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "tasks_collection",
             },
             "tasks_btd_reference_type_code_collection": {
@@ -10754,9 +10754,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "tasks_involved_parties_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"tasks_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "tasks_collection",
             },
             "tasks_involved_parties_party_type_code_collection": {
@@ -10834,9 +10834,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "time_entry_item_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"time_entry_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "time_entry_collection",
             },
             "time_entry_item_time_zone_code_collection": {
@@ -10889,9 +10889,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "visit_btd_reference_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"visit_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "visit_collection",
             },
             "visit_btd_reference_type_code_collection": {
@@ -10944,9 +10944,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "visit_party_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"visit_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "visit_collection",
             },
             "visit_party_party_type_code_collection": {
@@ -11012,9 +11012,9 @@ class SAPSalesServiceCloudBaseTest(BaseCase):
             },
             "visit_worklist_item_collection": {
                 cls.PRIMARY_KEYS: {"ObjectID"},
-                cls.REPLICATION_METHOD: cls.FULL_TABLE,
-                cls.REPLICATION_KEYS: set(),
-                cls.OBEYS_START_DATE: False,
+                cls.REPLICATION_METHOD: cls.INCREMENTAL,
+                cls.REPLICATION_KEYS: {"visit_collection_EntityLastChangedOn"},
+                cls.OBEYS_START_DATE: True,
                 cls.PARENT_TAP_STREAM_ID: "visit_collection",
             },
         }

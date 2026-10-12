@@ -295,6 +295,17 @@ class TestBuildParams(unittest.TestCase):
         stream.replication_keys = []
         self.assertNotIn("$filter", stream.build_params(state={}))
 
+    def test_synthetic_replication_key_no_filter(self):
+        """Synthetic (parent-derived) replication keys do not exist on
+        the child entity server-side, so no $filter should be sent."""
+        stream = _make_stream()
+        stream.replication_method = "INCREMENTAL"
+        stream.replication_keys = ["account_collection_ChangedOn"]
+        stream.synthetic_replication_key = True
+        stream.parent_replication_key = "ChangedOn"
+        stream.effective_bookmark = "2024-06-01T00:00:00Z"
+        self.assertNotIn("$filter", stream.build_params(state={}))
+
     def test_orderby_added_when_set(self):
         stream = _make_stream()
         stream.effective_bookmark = "2024-01-01T00:00:00Z"
@@ -329,6 +340,37 @@ class TestBuildParams(unittest.TestCase):
         )
         self.assertIn("datetimeoffset'", params["$filter"])
         self.assertIn("ParentID eq 'XYZ'", params["$filter"])
+
+
+# ---------------------------------------------------------------------------
+# modify_object
+# ---------------------------------------------------------------------------
+
+class TestModifyObject(unittest.TestCase):
+
+    def test_synthetic_replication_key_populated_from_parent(self):
+        stream = _make_stream()
+        stream.parent = "account_collection"
+        stream.parent_key_field = "ID"
+        stream.replication_keys = ["account_collection_ChangedOn"]
+        stream.synthetic_replication_key = True
+        stream.parent_replication_key = "ChangedOn"
+        parent_record = {"ID": "ACC1", "ChangedOn": "2024-06-01T00:00:00Z"}
+        record = stream.modify_object({}, parent_record)
+        self.assertEqual(
+            record["account_collection_ChangedOn"],
+            "2024-06-01T00:00:00Z",
+        )
+
+    def test_non_synthetic_stream_unaffected(self):
+        stream = _make_stream()
+        stream.parent = "account_collection"
+        stream.parent_key_field = "ID"
+        stream.replication_keys = ["ChangedOn"]
+        stream.synthetic_replication_key = False
+        parent_record = {"ID": "ACC1", "ChangedOn": "2024-06-01T00:00:00Z"}
+        record = stream.modify_object({}, parent_record)
+        self.assertNotIn("ChangedOn", record)
 
 
 # ---------------------------------------------------------------------------
