@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.0.0
+- Updated child streams from Full Table to Incremental replication when the parent uses Incremental replication.[#7](https://github.com/singer-io/tap-sap-sales-service-cloud/pull/7)
+
 ## 0.0.3
 - Hardened SSRF protections for OData paths and credentialed request redirects.[#6](https://github.com/singer-io/tap-sap-sales-service-cloud/pull/6)
 
