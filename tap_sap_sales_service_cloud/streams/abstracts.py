@@ -39,6 +39,10 @@ ODATA_DATE_RE = re.compile(
 # outside the Windows mktime range and cause OSError 22 without this fix.
 _UNIX_EPOCH = datetime(1970, 1, 1, tzinfo=timezone.utc)
 
+# Distinguishes "bookmark not yet computed this run" from "computed as
+# None" (no replication key) on BaseStream.effective_bookmark.
+_BOOKMARK_UNSET = object()
+
 
 def _format_odata_datetimeoffset(dt: datetime) -> str:
     """Format for ``Edm.DateTimeOffset`` filter literal.
@@ -118,7 +122,13 @@ class BaseStream(ABC):
         self.schema = catalog.schema.to_dict()
         self.metadata = metadata.to_map(catalog.metadata)
         self.child_to_sync = []
-        self.effective_bookmark = None
+        # Resolved once per run (see _resolve_effective_bookmark) and reused
+        # across every subsequent sync() invocation — child streams are
+        # invoked once per parent record, so re-reading state each time
+        # would let an out-of-order parent compare against a bookmark a
+        # later-processed (but chronologically older) sibling already
+        # advanced, silently dropping records.
+        self.effective_bookmark = _BOOKMARK_UNSET
         # Some SAP C4C entities are backed by TREX/HANA search views (e.g.
         # Lead) whose query builder crashes on the '(key eq null or ...)'
         # construct. Set once get_records() detects that failure so later
@@ -149,8 +159,14 @@ class BaseStream(ABC):
             and not self.synthetic_replication_key
         ):
             key = self.replication_keys[0]
-            bookmark = self.effective_bookmark or self.get_bookmark(
-                state, self.tap_stream_id, key
+            has_effective_bookmark = (
+                self.effective_bookmark
+                and self.effective_bookmark is not _BOOKMARK_UNSET
+            )
+            bookmark = (
+                self.effective_bookmark
+                if has_effective_bookmark
+                else self.get_bookmark(state, self.tap_stream_id, key)
             )
             lookback_days = int(
                 self.client.config.get("lookback_window", 0)
@@ -239,6 +255,23 @@ class BaseStream(ABC):
             self.client.config["start_date"],
         )
 
+    def _resolve_effective_bookmark(self, state: Dict, bookmark_key: str):
+        """Compute the comparison bookmark, aligned with any child streams.
+
+        Called once per run by sync() via the effective_bookmark cache.
+        """
+        bookmark = self.get_bookmark(state, self.tap_stream_id)
+        if self.child_to_sync:
+            parent_bookmark_key = f"{self.tap_stream_id}_{bookmark_key}"
+            for child in self.child_to_sync:
+                child_bookmark = self.get_bookmark(
+                    state, child.tap_stream_id, key=parent_bookmark_key
+                )
+                bookmark = (
+                    min(bookmark, child_bookmark) if bookmark else child_bookmark
+                )
+        return bookmark
+
     def write_bookmark(
         self,
         state: Dict,
@@ -259,12 +292,25 @@ class BaseStream(ABC):
         if not bookmark_key:
             return
         if self.is_selected():
-            write_bookmark(state, stream, bookmark_key, value)
+            self._write_bookmark_max(state, stream, bookmark_key, value)
         for child in self.child_to_sync:
             parent_bk_key = f"{self.tap_stream_id}_{bookmark_key}"
-            write_bookmark(
+            self._write_bookmark_max(
                 state, child.tap_stream_id, parent_bk_key, value
             )
+
+    @staticmethod
+    def _write_bookmark_max(
+        state: Dict, stream: str, key: str, value
+    ) -> None:
+        """Persist *value* only if it advances the existing bookmark.
+
+        Child streams call write_bookmark() once per parent record, so a
+        blind overwrite could regress the persisted bookmark below a value
+        an earlier (but chronologically later) sibling already wrote.
+        """
+        existing = get_bookmark(state, stream, key, value)
+        write_bookmark(state, stream, key, max(existing, value))
 
     # ------------------------------------------------------------------
     # Record normalization
@@ -532,27 +578,15 @@ class BaseStream(ABC):
         bookmark_key = (
             self.replication_keys[0] if self.replication_keys else None
         )
-        bookmark = (
-            self.get_bookmark(state, self.tap_stream_id)
-            if bookmark_key
-            else None
-        )
 
-        # Align child-stream bookmarks with parent bookmark so incremental
-        # windows stay consistent.
-        if bookmark_key and self.child_to_sync:
-            parent_bookmark_key = f"{self.tap_stream_id}_{bookmark_key}"
-            for child in self.child_to_sync:
-                child_bookmark = self.get_bookmark(
-                    state,
-                    child.tap_stream_id,
-                    key=parent_bookmark_key,
-                )
-                bookmark = (
-                    min(bookmark, child_bookmark) if bookmark else child_bookmark
-                )
+        if not bookmark_key:
+            self.effective_bookmark = None
+        elif self.effective_bookmark is _BOOKMARK_UNSET:
+            self.effective_bookmark = self._resolve_effective_bookmark(
+                state, bookmark_key
+            )
 
-        self.effective_bookmark = bookmark
+        bookmark = self.effective_bookmark
 
         # Only advance bookmark from real records — never pre-seed with
         # start_date so that zero-record syncs never write a spurious bookmark.

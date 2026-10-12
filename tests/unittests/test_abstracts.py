@@ -633,6 +633,97 @@ class TestSync(unittest.TestCase):
 
 
 # ---------------------------------------------------------------------------
+# sync() - out-of-order parent bookmark safety (child streams are invoked
+# once per parent record within a single run; these simulate two such
+# invocations on the same stream instance in a non-chronological order).
+# ---------------------------------------------------------------------------
+
+class TestSyncBookmarkFreezeAcrossRun(unittest.TestCase):
+
+    def _make_child_stream(self, start_date="2024-01-01T00:00:00Z"):
+        stream = _make_stream(selected=True, start_date=start_date)
+        stream.parent = "parent_stream"
+        stream.path = "/TestCollection"
+        return stream
+
+    @staticmethod
+    def _transformer():
+        t = MagicMock()
+        t.transform.side_effect = lambda r, s, m: r
+        return t
+
+    def test_out_of_order_parent_does_not_silently_drop_records(self):
+        """A later-processed parent with an OLDER replication-key value
+        must not have its child rows dropped just because an
+        earlier-processed parent already advanced the stored bookmark."""
+        stream = self._make_child_stream()
+        state = {
+            "bookmarks": {
+                "test_stream": {"ChangedOn": "2024-01-01T00:00:00Z"},
+            }
+        }
+        transformer = self._transformer()
+
+        # First invocation: a "later" parent (e.g. Mar) processed first.
+        stream.get_records = MagicMock(return_value=iter([
+            {"ObjectID": "1",
+             "ChangedOn": "2024-06-01T00:00:00.000000Z",
+             "Name": "from-later-parent"},
+        ]))
+        written = []
+        with patch(_WR, side_effect=lambda s, r: written.append(r)):
+            stream.sync(state=state, transformer=transformer)
+
+        # Second invocation: an out-of-order "earlier" parent (e.g. Feb)
+        # processed after the above. Its own ChangedOn value is still above
+        # the run-start bookmark, so it must be retained.
+        stream.get_records = MagicMock(return_value=iter([
+            {"ObjectID": "2",
+             "ChangedOn": "2024-03-01T00:00:00.000000Z",
+             "Name": "from-earlier-parent"},
+        ]))
+        with patch(_WR, side_effect=lambda s, r: written.append(r)):
+            stream.sync(state=state, transformer=transformer)
+
+        self.assertEqual(
+            {r["ObjectID"] for r in written}, {"1", "2"}
+        )
+
+    def test_final_bookmark_does_not_regress_across_invocations(self):
+        """The persisted bookmark must converge to the true max across all
+        per-parent invocations in the run, even if a later invocation's own
+        max is lower than a value already written by an earlier one."""
+        stream = self._make_child_stream()
+        state = {
+            "bookmarks": {
+                "test_stream": {"ChangedOn": "2024-01-01T00:00:00Z"},
+            }
+        }
+        transformer = self._transformer()
+
+        stream.get_records = MagicMock(return_value=iter([
+            {"ObjectID": "1",
+             "ChangedOn": "2024-06-01T00:00:00.000000Z",
+             "Name": "from-later-parent"},
+        ]))
+        with patch(_WR):
+            stream.sync(state=state, transformer=transformer)
+
+        stream.get_records = MagicMock(return_value=iter([
+            {"ObjectID": "2",
+             "ChangedOn": "2024-03-01T00:00:00.000000Z",
+             "Name": "from-earlier-parent"},
+        ]))
+        with patch(_WR):
+            stream.sync(state=state, transformer=transformer)
+
+        self.assertEqual(
+            get_bookmark(state, "test_stream", "ChangedOn"),
+            "2024-06-01T00:00:00.000000Z",
+        )
+
+
+# ---------------------------------------------------------------------------
 # get_records() â€” $skip/$top pagination
 # ---------------------------------------------------------------------------
 
