@@ -1108,6 +1108,75 @@ def discover_dynamic_streams(client) -> Tuple[Dict, Dict, Dict]:
             ),
         }
 
+    # ---------------------------------------------------------------------------
+    # Second pass: a FULL_TABLE child whose parent is INCREMENTAL is never
+    # fetched for parents the API excludes as unchanged, silently breaking the
+    # FULL_TABLE "every record every run" contract. Since the child has no
+    # native replication key of its own, synthesize one from the parent's
+    # replication key/value so the child becomes honestly INCREMENTAL instead.
+    # Repeated to a fixed point so multi-level cascades (grandchild whose
+    # immediate parent is only converted in this same pass) also resolve,
+    # regardless of stream_defs dict iteration order.
+    # ---------------------------------------------------------------------------
+    converted_any = True
+    while converted_any:
+        converted_any = False
+        for stream_name, stream_def in stream_defs.items():
+            if stream_def["replication_method"] != "FULL_TABLE":
+                continue
+            parent_stream = stream_def.get("parent_stream")
+            if not parent_stream:
+                continue
+            parent_def = stream_defs.get(parent_stream)
+            if not parent_def or parent_def["replication_method"] != "INCREMENTAL":
+                continue
+
+            parent_replication_key = parent_def["replication_keys"][0]
+            synthetic_key = f"{parent_stream}_{parent_replication_key}"
+
+            schemas[stream_name]["properties"][synthetic_key] = {
+                "type": ["string", "null"],
+                "format": "date-time",
+            }
+
+            stream_def["replication_method"] = "INCREMENTAL"
+            stream_def["replication_keys"] = [synthetic_key]
+
+            mdata = metadata.to_map(field_metadata[stream_name])
+            # get_standard_metadata() already wrote 'forced-replication-method'
+            # with the original FULL_TABLE value; it (not 'replication-method')
+            # is what DynamicStream reads with priority, so it must be updated.
+            mdata = metadata.write(
+                mdata, (), "forced-replication-method", "INCREMENTAL"
+            )
+            mdata = metadata.write(mdata, (), "replication-method", "INCREMENTAL")
+            mdata = metadata.write(
+                mdata, (), "valid-replication-keys", [synthetic_key]
+            )
+            mdata = metadata.write(
+                mdata, ("properties", synthetic_key), "inclusion", "automatic"
+            )
+            mdata = metadata.write(
+                mdata, (), f"{MDATA_NS}.synthetic-replication-key", True
+            )
+            mdata = metadata.write(
+                mdata,
+                (),
+                f"{MDATA_NS}.parent-replication-key",
+                parent_replication_key,
+            )
+            field_metadata[stream_name] = metadata.to_list(mdata)
+
+            LOGGER.info(
+                "Stream '%s' has no native replication key; converting "
+                "FULL_TABLE -> INCREMENTAL using synthesized parent key '%s' "
+                "(parent='%s').",
+                stream_name,
+                synthetic_key,
+                parent_stream,
+            )
+            converted_any = True
+
     LOGGER.info(
         "Discovered %d entity sets from OData $metadata.", len(stream_defs)
     )

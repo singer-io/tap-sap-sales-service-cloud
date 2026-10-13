@@ -295,6 +295,17 @@ class TestBuildParams(unittest.TestCase):
         stream.replication_keys = []
         self.assertNotIn("$filter", stream.build_params(state={}))
 
+    def test_synthetic_replication_key_no_filter(self):
+        """Synthetic (parent-derived) replication keys do not exist on
+        the child entity server-side, so no $filter should be sent."""
+        stream = _make_stream()
+        stream.replication_method = "INCREMENTAL"
+        stream.replication_keys = ["account_collection_ChangedOn"]
+        stream.synthetic_replication_key = True
+        stream.parent_replication_key = "ChangedOn"
+        stream.effective_bookmark = "2024-06-01T00:00:00Z"
+        self.assertNotIn("$filter", stream.build_params(state={}))
+
     def test_orderby_added_when_set(self):
         stream = _make_stream()
         stream.effective_bookmark = "2024-01-01T00:00:00Z"
@@ -329,6 +340,37 @@ class TestBuildParams(unittest.TestCase):
         )
         self.assertIn("datetimeoffset'", params["$filter"])
         self.assertIn("ParentID eq 'XYZ'", params["$filter"])
+
+
+# ---------------------------------------------------------------------------
+# modify_object
+# ---------------------------------------------------------------------------
+
+class TestModifyObject(unittest.TestCase):
+
+    def test_synthetic_replication_key_populated_from_parent(self):
+        stream = _make_stream()
+        stream.parent = "account_collection"
+        stream.parent_key_field = "ID"
+        stream.replication_keys = ["account_collection_ChangedOn"]
+        stream.synthetic_replication_key = True
+        stream.parent_replication_key = "ChangedOn"
+        parent_record = {"ID": "ACC1", "ChangedOn": "2024-06-01T00:00:00Z"}
+        record = stream.modify_object({}, parent_record)
+        self.assertEqual(
+            record["account_collection_ChangedOn"],
+            "2024-06-01T00:00:00Z",
+        )
+
+    def test_non_synthetic_stream_unaffected(self):
+        stream = _make_stream()
+        stream.parent = "account_collection"
+        stream.parent_key_field = "ID"
+        stream.replication_keys = ["ChangedOn"]
+        stream.synthetic_replication_key = False
+        parent_record = {"ID": "ACC1", "ChangedOn": "2024-06-01T00:00:00Z"}
+        record = stream.modify_object({}, parent_record)
+        self.assertNotIn("ChangedOn", record)
 
 
 # ---------------------------------------------------------------------------
@@ -588,6 +630,97 @@ class TestSync(unittest.TestCase):
                 state={}, transformer=self._transformer()
             )
         self.assertEqual(count, expected_count)
+
+
+# ---------------------------------------------------------------------------
+# sync() - out-of-order parent bookmark safety (child streams are invoked
+# once per parent record within a single run; these simulate two such
+# invocations on the same stream instance in a non-chronological order).
+# ---------------------------------------------------------------------------
+
+class TestSyncBookmarkFreezeAcrossRun(unittest.TestCase):
+
+    def _make_child_stream(self, start_date="2024-01-01T00:00:00Z"):
+        stream = _make_stream(selected=True, start_date=start_date)
+        stream.parent = "parent_stream"
+        stream.path = "/TestCollection"
+        return stream
+
+    @staticmethod
+    def _transformer():
+        t = MagicMock()
+        t.transform.side_effect = lambda r, s, m: r
+        return t
+
+    def test_out_of_order_parent_does_not_silently_drop_records(self):
+        """A later-processed parent with an OLDER replication-key value
+        must not have its child rows dropped just because an
+        earlier-processed parent already advanced the stored bookmark."""
+        stream = self._make_child_stream()
+        state = {
+            "bookmarks": {
+                "test_stream": {"ChangedOn": "2024-01-01T00:00:00Z"},
+            }
+        }
+        transformer = self._transformer()
+
+        # First invocation: a "later" parent (e.g. Mar) processed first.
+        stream.get_records = MagicMock(return_value=iter([
+            {"ObjectID": "1",
+             "ChangedOn": "2024-06-01T00:00:00.000000Z",
+             "Name": "from-later-parent"},
+        ]))
+        written = []
+        with patch(_WR, side_effect=lambda s, r: written.append(r)):
+            stream.sync(state=state, transformer=transformer)
+
+        # Second invocation: an out-of-order "earlier" parent (e.g. Feb)
+        # processed after the above. Its own ChangedOn value is still above
+        # the run-start bookmark, so it must be retained.
+        stream.get_records = MagicMock(return_value=iter([
+            {"ObjectID": "2",
+             "ChangedOn": "2024-03-01T00:00:00.000000Z",
+             "Name": "from-earlier-parent"},
+        ]))
+        with patch(_WR, side_effect=lambda s, r: written.append(r)):
+            stream.sync(state=state, transformer=transformer)
+
+        self.assertEqual(
+            {r["ObjectID"] for r in written}, {"1", "2"}
+        )
+
+    def test_final_bookmark_does_not_regress_across_invocations(self):
+        """The persisted bookmark must converge to the true max across all
+        per-parent invocations in the run, even if a later invocation's own
+        max is lower than a value already written by an earlier one."""
+        stream = self._make_child_stream()
+        state = {
+            "bookmarks": {
+                "test_stream": {"ChangedOn": "2024-01-01T00:00:00Z"},
+            }
+        }
+        transformer = self._transformer()
+
+        stream.get_records = MagicMock(return_value=iter([
+            {"ObjectID": "1",
+             "ChangedOn": "2024-06-01T00:00:00.000000Z",
+             "Name": "from-later-parent"},
+        ]))
+        with patch(_WR):
+            stream.sync(state=state, transformer=transformer)
+
+        stream.get_records = MagicMock(return_value=iter([
+            {"ObjectID": "2",
+             "ChangedOn": "2024-03-01T00:00:00.000000Z",
+             "Name": "from-earlier-parent"},
+        ]))
+        with patch(_WR):
+            stream.sync(state=state, transformer=transformer)
+
+        self.assertEqual(
+            get_bookmark(state, "test_stream", "ChangedOn"),
+            "2024-06-01T00:00:00.000000Z",
+        )
 
 
 # ---------------------------------------------------------------------------

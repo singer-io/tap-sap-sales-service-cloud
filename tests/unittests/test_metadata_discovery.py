@@ -438,6 +438,285 @@ class TestParentChildDiscovery(unittest.TestCase):
         )
 
 
+class TestSyntheticReplicationKeyConversion(unittest.TestCase):
+    """FULL_TABLE child of an INCREMENTAL parent gets converted to
+    INCREMENTAL with a synthesized parent-derived replication key."""
+
+    def _discover(self, metadata_xml):
+        client = _FakeClient(metadata_xml)
+        return discover_dynamic_streams(client)
+
+    _METADATA_XML = """
+    <Edmx>
+      <DataServices>
+        <Schema Namespace="TestModel"
+                xmlns:sap="http://www.sap.com/Protocols/SAPData">
+          <EntityType Name="Account">
+            <Key><PropertyRef Name="ID" /></Key>
+            <Property Name="ID" Type="Edm.String"
+                      sap:filterable="true" />
+            <Property Name="ChangedOn" Type="Edm.DateTime"
+                      sap:filterable="true" />
+          </EntityType>
+          <EntityType Name="Address">
+            <Key><PropertyRef Name="AddressID" /></Key>
+            <Property Name="AddressID" Type="Edm.String"
+                      sap:filterable="true" />
+            <Property Name="AccountID" Type="Edm.String"
+                      sap:filterable="true" />
+            <NavigationProperty Name="AccountNav"
+                Relationship="TestModel.Account_Address"
+                FromRole="Address" ToRole="Account" />
+          </EntityType>
+          <Association Name="Account_Address">
+            <End Role="Account" Type="TestModel.Account"
+                 Multiplicity="1" />
+            <End Role="Address" Type="TestModel.Address"
+                 Multiplicity="*" />
+            <ReferentialConstraint>
+              <Principal Role="Account">
+                <PropertyRef Name="ID" />
+              </Principal>
+              <Dependent Role="Address">
+                <PropertyRef Name="AccountID" />
+              </Dependent>
+            </ReferentialConstraint>
+          </Association>
+          <EntityContainer Name="DefaultContainer">
+            <EntitySet
+                Name="AccountCollection"
+                EntityType="TestModel.Account" />
+            <EntitySet
+                Name="AddressCollection"
+                EntityType="TestModel.Address" />
+          </EntityContainer>
+        </Schema>
+      </DataServices>
+    </Edmx>
+    """
+
+    def test_parent_incremental_child_full_table_is_converted(self):
+        schemas, field_metadata, stream_defs = self._discover(
+            self._METADATA_XML
+        )
+
+        parent_def = stream_defs["account_collection"]
+        self.assertEqual(parent_def["replication_method"], "INCREMENTAL")
+        self.assertEqual(parent_def["replication_keys"], ["ChangedOn"])
+
+        child_def = stream_defs["address_collection"]
+        self.assertEqual(child_def["replication_method"], "INCREMENTAL")
+        self.assertEqual(
+            child_def["replication_keys"],
+            ["account_collection_ChangedOn"],
+        )
+
+    def test_synthetic_key_added_to_schema(self):
+        schemas, _field_metadata, _stream_defs = self._discover(
+            self._METADATA_XML
+        )
+        self.assertIn(
+            "account_collection_ChangedOn",
+            schemas["address_collection"]["properties"],
+        )
+
+    def test_synthetic_key_metadata_written(self):
+        _schemas, field_metadata, _stream_defs = self._discover(
+            self._METADATA_XML
+        )
+        root_metadata = metadata.to_map(
+            field_metadata["address_collection"]
+        ).get((), {})
+        # 'forced-replication-method' (written by get_standard_metadata) is
+        # what DynamicStream reads with priority, so it must be overwritten
+        # too -- not just 'replication-method'.
+        self.assertEqual(
+            root_metadata["forced-replication-method"], "INCREMENTAL"
+        )
+        self.assertEqual(
+            root_metadata["replication-method"], "INCREMENTAL"
+        )
+        self.assertEqual(
+            root_metadata["valid-replication-keys"],
+            ["account_collection_ChangedOn"],
+        )
+        self.assertTrue(
+            root_metadata[f"{MDATA_NS}.synthetic-replication-key"]
+        )
+        self.assertEqual(
+            root_metadata[f"{MDATA_NS}.parent-replication-key"],
+            "ChangedOn",
+        )
+        field_meta = metadata.to_map(
+            field_metadata["address_collection"]
+        ).get(("properties", "account_collection_ChangedOn"), {})
+        self.assertEqual(field_meta["inclusion"], "automatic")
+
+    def test_full_table_child_of_full_table_parent_is_untouched(self):
+        metadata_xml = """
+        <Edmx>
+          <DataServices>
+            <Schema Namespace="TestModel"
+                    xmlns:sap="http://www.sap.com/Protocols/SAPData">
+              <EntityType Name="Account">
+                <Key><PropertyRef Name="ID" /></Key>
+                <Property Name="ID" Type="Edm.String"
+                          sap:filterable="true" />
+              </EntityType>
+              <EntityType Name="Address">
+                <Key><PropertyRef Name="AddressID" /></Key>
+                <Property Name="AddressID" Type="Edm.String"
+                          sap:filterable="true" />
+                <Property Name="AccountID" Type="Edm.String"
+                          sap:filterable="true" />
+                <NavigationProperty Name="AccountNav"
+                    Relationship="TestModel.Account_Address"
+                    FromRole="Address" ToRole="Account" />
+              </EntityType>
+              <Association Name="Account_Address">
+                <End Role="Account" Type="TestModel.Account"
+                     Multiplicity="1" />
+                <End Role="Address" Type="TestModel.Address"
+                     Multiplicity="*" />
+                <ReferentialConstraint>
+                  <Principal Role="Account">
+                    <PropertyRef Name="ID" />
+                  </Principal>
+                  <Dependent Role="Address">
+                    <PropertyRef Name="AccountID" />
+                  </Dependent>
+                </ReferentialConstraint>
+              </Association>
+              <EntityContainer Name="DefaultContainer">
+                <EntitySet
+                    Name="AccountCollection"
+                    EntityType="TestModel.Account" />
+                <EntitySet
+                    Name="AddressCollection"
+                    EntityType="TestModel.Address" />
+              </EntityContainer>
+            </Schema>
+          </DataServices>
+        </Edmx>
+        """
+        _schemas, _field_metadata, stream_defs = self._discover(metadata_xml)
+
+        self.assertEqual(
+            stream_defs["account_collection"]["replication_method"],
+            "FULL_TABLE",
+        )
+        child_def = stream_defs["address_collection"]
+        self.assertEqual(child_def["replication_method"], "FULL_TABLE")
+        self.assertEqual(child_def["replication_keys"], [])
+
+    def test_multi_level_cascade_is_converted(self):
+        """Grandchild (FULL_TABLE) whose immediate parent (FULL_TABLE) is
+        itself only converted in this same pass must also be converted,
+        using the now-synthetic replication key of its immediate parent."""
+        metadata_xml = """
+        <Edmx>
+          <DataServices>
+            <Schema Namespace="TestModel"
+                    xmlns:sap="http://www.sap.com/Protocols/SAPData">
+              <EntityType Name="Account">
+                <Key><PropertyRef Name="ID" /></Key>
+                <Property Name="ID" Type="Edm.String"
+                          sap:filterable="true" />
+                <Property Name="ChangedOn" Type="Edm.DateTime"
+                          sap:filterable="true" />
+              </EntityType>
+              <EntityType Name="Address">
+                <Key><PropertyRef Name="AddressID" /></Key>
+                <Property Name="AddressID" Type="Edm.String"
+                          sap:filterable="true" />
+                <Property Name="AccountID" Type="Edm.String"
+                          sap:filterable="true" />
+                <NavigationProperty Name="AccountNav"
+                    Relationship="TestModel.Account_Address"
+                    FromRole="Address" ToRole="Account" />
+              </EntityType>
+              <EntityType Name="AddressDetail">
+                <Key><PropertyRef Name="DetailID" /></Key>
+                <Property Name="DetailID" Type="Edm.String"
+                          sap:filterable="true" />
+                <Property Name="AddressID" Type="Edm.String"
+                          sap:filterable="true" />
+                <NavigationProperty Name="AddressNav"
+                    Relationship="TestModel.Address_AddressDetail"
+                    FromRole="AddressDetail" ToRole="Address" />
+              </EntityType>
+              <Association Name="Account_Address">
+                <End Role="Account" Type="TestModel.Account"
+                     Multiplicity="1" />
+                <End Role="Address" Type="TestModel.Address"
+                     Multiplicity="*" />
+                <ReferentialConstraint>
+                  <Principal Role="Account">
+                    <PropertyRef Name="ID" />
+                  </Principal>
+                  <Dependent Role="Address">
+                    <PropertyRef Name="AccountID" />
+                  </Dependent>
+                </ReferentialConstraint>
+              </Association>
+              <Association Name="Address_AddressDetail">
+                <End Role="Address" Type="TestModel.Address"
+                     Multiplicity="1" />
+                <End Role="AddressDetail" Type="TestModel.AddressDetail"
+                     Multiplicity="*" />
+                <ReferentialConstraint>
+                  <Principal Role="Address">
+                    <PropertyRef Name="AddressID" />
+                  </Principal>
+                  <Dependent Role="AddressDetail">
+                    <PropertyRef Name="AddressID" />
+                  </Dependent>
+                </ReferentialConstraint>
+              </Association>
+              <EntityContainer Name="DefaultContainer">
+                <EntitySet
+                    Name="AccountCollection"
+                    EntityType="TestModel.Account" />
+                <EntitySet
+                    Name="AddressCollection"
+                    EntityType="TestModel.Address" />
+                <EntitySet
+                    Name="AddressDetailCollection"
+                    EntityType="TestModel.AddressDetail" />
+              </EntityContainer>
+            </Schema>
+          </DataServices>
+        </Edmx>
+        """
+        schemas, field_metadata, stream_defs = self._discover(metadata_xml)
+
+        child_def = stream_defs["address_collection"]
+        self.assertEqual(child_def["replication_method"], "INCREMENTAL")
+        self.assertEqual(
+            child_def["replication_keys"], ["account_collection_ChangedOn"]
+        )
+
+        grandchild_def = stream_defs["address_detail_collection"]
+        self.assertEqual(grandchild_def["replication_method"], "INCREMENTAL")
+        synthetic_key = "address_collection_account_collection_ChangedOn"
+        self.assertEqual(grandchild_def["replication_keys"], [synthetic_key])
+        self.assertIn(
+            synthetic_key,
+            schemas["address_detail_collection"]["properties"],
+        )
+
+        root_metadata = metadata.to_map(
+            field_metadata["address_detail_collection"]
+        ).get((), {})
+        self.assertEqual(
+            root_metadata["forced-replication-method"], "INCREMENTAL"
+        )
+        self.assertEqual(
+            root_metadata[f"{MDATA_NS}.parent-replication-key"],
+            "account_collection_ChangedOn",
+        )
+
+
 # ---------------------------------------------------------------------------
 # _dedup_case_insensitive_properties
 # ---------------------------------------------------------------------------

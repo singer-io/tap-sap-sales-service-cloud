@@ -66,6 +66,12 @@ class DynamicStream(BaseStream):
         self.replication_key_edm_type = (
             root_metadata.get(f"{MDATA_NS}.replication-key-edm-type") or ""
         )
+        self.synthetic_replication_key = bool(
+            root_metadata.get(f"{MDATA_NS}.synthetic-replication-key")
+        )
+        self.parent_replication_key = (
+            root_metadata.get(f"{MDATA_NS}.parent-replication-key") or ""
+        )
 
         if self.expand_nav_property and self.expand_parent_entity_set:
             # Override path to point at the parent entity set so that
