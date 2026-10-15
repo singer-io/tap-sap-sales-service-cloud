@@ -25,9 +25,7 @@ class DynamicStream(BaseStream):
 
         self.replication_keys = root_metadata.get("valid-replication-keys", [])
         self.replication_method = (
-            root_metadata.get("forced-replication-method")
-            or root_metadata.get("replication-method")
-            or "FULL_TABLE"
+            root_metadata.get("forced-replication-method") or "FULL_TABLE"
         )
 
         # OData entity-set path (e.g. /sap/c4c/odata/v1/c4codataapi/AccountCollection)
