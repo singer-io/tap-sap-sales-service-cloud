@@ -527,15 +527,12 @@ class TestSyntheticReplicationKeyConversion(unittest.TestCase):
         root_metadata = metadata.to_map(
             field_metadata["address_collection"]
         ).get((), {})
-        # 'forced-replication-method' (written by get_standard_metadata) is
-        # what DynamicStream reads with priority, so it must be overwritten
-        # too -- not just 'replication-method'.
+        # 'replication-method' is non-discoverable and must never be
+        # written; only 'forced-replication-method' is read by DynamicStream.
         self.assertEqual(
             root_metadata["forced-replication-method"], "INCREMENTAL"
         )
-        self.assertEqual(
-            root_metadata["replication-method"], "INCREMENTAL"
-        )
+        self.assertNotIn("replication-method", root_metadata)
         self.assertEqual(
             root_metadata["valid-replication-keys"],
             ["account_collection_ChangedOn"],

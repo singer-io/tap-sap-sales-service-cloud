@@ -40,7 +40,7 @@ def _make_catalog(
     }
     mdata = md.new()
     mdata = md.write(mdata, (), "selected", selected)
-    mdata = md.write(mdata, (), "replication-method", replication_method)
+    mdata = md.write(mdata, (), "forced-replication-method", replication_method)
     mdata = md.write(
         mdata, (), "valid-replication-keys", replication_keys
     )
