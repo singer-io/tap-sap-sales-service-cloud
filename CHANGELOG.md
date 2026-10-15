@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.0.1
+- Remove `replication-method` from the root-metadata.[#8](https://github.com/singer-io/tap-sap-sales-service-cloud/pull/8)
+
 ## 1.0.0
 - Updated child streams from Full Table to Incremental replication when the parent uses Incremental replication.[#7](https://github.com/singer-io/tap-sap-sales-service-cloud/pull/7)
 
