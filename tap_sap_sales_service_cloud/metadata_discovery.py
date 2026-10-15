@@ -1143,13 +1143,11 @@ def discover_dynamic_streams(client) -> Tuple[Dict, Dict, Dict]:
             stream_def["replication_keys"] = [synthetic_key]
 
             mdata = metadata.to_map(field_metadata[stream_name])
-            # get_standard_metadata() already wrote 'forced-replication-method'
-            # with the original FULL_TABLE value; it (not 'replication-method')
-            # is what DynamicStream reads with priority, so it must be updated.
+            # 'replication-method' is a non-discoverable field; only
+            # 'forced-replication-method' is read by DynamicStream.
             mdata = metadata.write(
                 mdata, (), "forced-replication-method", "INCREMENTAL"
             )
-            mdata = metadata.write(mdata, (), "replication-method", "INCREMENTAL")
             mdata = metadata.write(
                 mdata, (), "valid-replication-keys", [synthetic_key]
             )
