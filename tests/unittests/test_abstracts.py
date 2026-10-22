@@ -1,5 +1,6 @@
 ﻿"""Unit tests for tap_sap_sales_service_cloud.streams.abstracts."""
 
+import re
 import unittest
 from unittest.mock import MagicMock, patch
 
@@ -7,6 +8,11 @@ from parameterized import parameterized
 from singer import get_bookmark
 from singer import metadata as md
 
+from tap_sap_sales_service_cloud.exceptions import (
+    SAPSalesServiceCloudBadRequestError,
+    SAPSalesServiceCloudError,
+    SAPSalesServiceCloudInternalServerError,
+)
 from tap_sap_sales_service_cloud.metadata_discovery import MDATA_NS
 from tap_sap_sales_service_cloud.streams.abstracts import ODATA_DATE_RE
 
@@ -1002,3 +1008,183 @@ class TestGetRecords(unittest.TestCase):
         stream.client.get.return_value = _make_odata_page(2)
         records = list(stream.get_records(state={}))
         self.assertEqual(len(records), 2)
+
+
+# ---------------------------------------------------------------------------
+# Batched child sync
+# ---------------------------------------------------------------------------
+
+_CHILD_ROWS = {
+    "P1": [{"ObjectID": "C1", "ParentObjectID": "P1"},
+           {"ObjectID": "C2", "ParentObjectID": "P1"}],
+    "P2": [],
+    "P3": [{"ObjectID": "C3", "ParentObjectID": "P3"}],
+    "P4": [{"ObjectID": "C4", "ParentObjectID": "P4"}],
+    "P5": [{"ObjectID": "C5", "ParentObjectID": "P5"}],
+}
+
+
+class _FakeChildServer:
+    """Serves child rows by evaluating 'ParentObjectID eq ...' filters."""
+
+    def __init__(self, rows=None, on_request=None):
+        self.rows = rows or _CHILD_ROWS
+        self.on_request = on_request
+        self.data_filters = []
+
+    def __call__(self, path, params=None, headers=None):
+        ids = re.findall(r"ParentObjectID eq '([^']*)'", params["$filter"])
+        if self.on_request:
+            self.on_request(ids, params)
+        rows = [r for pid in ids for r in self.rows.get(pid, [])]
+        if params["$top"] != 1:
+            self.data_filters.append(ids)
+        skip = params.get("$skip", 0)
+        page = rows[skip:skip + params["$top"]]
+        return {"d": {"results": [dict(r) for r in page],
+                      "__count": str(len(rows))}}
+
+
+class TestBatchedChildSync(unittest.TestCase):
+
+    PARENT_IDS = ["P1", "P2", "P3", "P4", "P5"]
+
+    @staticmethod
+    def _transformer():
+        t = MagicMock()
+        t.transform.side_effect = lambda r, s, m: r
+        return t
+
+    def _make_pair(self, server, parent_ids=None, child_kwargs=None):
+        parent = _make_stream(
+            stream_id="test_stream", start_date="2000-01-01T00:00:00Z"
+        )
+        parent.get_records = MagicMock(return_value=iter([
+            {"ObjectID": pid, "ChangedOn": "2024-06-01T00:00:00.000000Z"}
+            for pid in (parent_ids or self.PARENT_IDS)
+        ]))
+        stream_kwargs = {"replication_method": "FULL_TABLE"}
+        stream_kwargs.update(child_kwargs or {})
+        child = _make_stream(stream_id="child_stream", **stream_kwargs)
+        child.parent = "test_stream"
+        child.parent_filter_field = "ParentObjectID"
+        child.parent_key_field = "ObjectID"
+        child.path = "/ChildCollection"
+        child.schema["properties"]["ParentObjectID"] = {
+            "type": ["string", "null"]
+        }
+        child.client.get.side_effect = server
+        child.client.config["page_size"] = 1000
+        child._batch_max_parents = 2
+        parent.child_to_sync = [child]
+        return parent, child
+
+    def _run(self, parent):
+        written = []
+        with patch(_WR, side_effect=lambda s, r: written.append((s, r))):
+            parent.sync(state={}, transformer=self._transformer())
+        return [
+            (s, r["ObjectID"], r.get("__parent_test_stream_ObjectID"))
+            for s, r in written if s == "child_stream"
+        ]
+
+    def _per_parent_output(self, parent_ids=None, child_kwargs=None):
+        parent, child = self._make_pair(
+            _FakeChildServer(), parent_ids, child_kwargs
+        )
+        child._batching_disabled = True
+        return self._run(parent)
+
+    def test_batched_output_matches_per_parent(self):
+        expected = self._per_parent_output()
+        server = _FakeChildServer()
+        parent, child = self._make_pair(server)
+        self.assertEqual(sorted(self._run(parent)), sorted(expected))
+        self.assertTrue(child._batch_verified)
+        self.assertEqual(server.data_filters, [["P1", "P2"], ["P3", "P4"],
+                                               ["P5"]])
+
+    def test_duplicate_parent_key_syncs_children_per_occurrence(self):
+        ids = ["P1", "P1", "P3"]
+        expected = self._per_parent_output(ids)
+        parent, _ = self._make_pair(_FakeChildServer(), ids)
+        self.assertEqual(sorted(self._run(parent)), sorted(expected))
+
+    def test_count_mismatch_falls_back_to_per_parent(self):
+        def drop_rows(ids, params):
+            if len(ids) > 1:
+                server.rows = {"P1": _CHILD_ROWS["P1"][:1]}
+            else:
+                server.rows = _CHILD_ROWS
+
+        server = _FakeChildServer(on_request=drop_rows)
+        parent, child = self._make_pair(server)
+        self.assertEqual(
+            sorted(self._run(parent)), sorted(self._per_parent_output())
+        )
+        self.assertTrue(child._batching_disabled)
+        self.assertTrue(all(len(ids) == 1 for ids in server.data_filters))
+
+    @parameterized.expand([
+        ("bad_request", SAPSalesServiceCloudBadRequestError),
+        ("server_error", SAPSalesServiceCloudInternalServerError),
+    ])
+    def test_rejected_batch_is_split(self, _, exc_cls):
+        def reject_batches(ids, params):
+            if len(ids) > 1:
+                raise exc_cls("rejected")
+
+        # INCREMENTAL so the NULL-inclusive filter fallback is in play.
+        kwargs = {"replication_method": "INCREMENTAL"}
+        parent, child = self._make_pair(
+            _FakeChildServer(on_request=reject_batches), child_kwargs=kwargs
+        )
+        child._batch_verified = True
+        self.assertEqual(
+            sorted(self._run(parent)),
+            sorted(self._per_parent_output(child_kwargs=kwargs)),
+        )
+        self.assertEqual(child._batch_max_parents, 1)
+        self.assertFalse(child._skip_null_filter)
+
+    def test_unmatched_batched_record_aborts(self):
+        rows = dict(_CHILD_ROWS)
+        rows["P1"] = [{"ObjectID": "C1", "ParentObjectID": "OTHER"}]
+        parent, child = self._make_pair(_FakeChildServer(rows=rows))
+        child._batch_verified = True
+        with self.assertRaises(SAPSalesServiceCloudError):
+            self._run(parent)
+
+    def test_failure_after_records_received_is_not_split(self):
+        def fail_second_page(ids, params):
+            if len(ids) > 1 and params.get("$skip", 0) > 0:
+                raise SAPSalesServiceCloudBadRequestError("page 2")
+
+        parent, child = self._make_pair(
+            _FakeChildServer(on_request=fail_second_page)
+        )
+        child.client.config["page_size"] = 1
+        child._batch_verified = True
+        with self.assertRaises(SAPSalesServiceCloudBadRequestError):
+            self._run(parent)
+        self.assertEqual(child._batch_max_parents, 2)
+
+    @parameterized.expand([
+        ("secondary_filter",
+         {"parent_secondary_filter_field": "Type",
+          "parent_secondary_key_field": "Type"}),
+        ("expand",
+         {"expand_nav_property": "Items",
+          "expand_parent_entity_set": "ParentCollection"}),
+    ])
+    def test_ineligible_child_not_batched(self, _, attrs):
+        _, child = self._make_pair(_FakeChildServer())
+        self.assertTrue(child.supports_batching)
+        for attr, value in attrs.items():
+            setattr(child, attr, value)
+        self.assertFalse(child.supports_batching)
+
+    def test_date_time_foreign_key_not_batched(self):
+        _, child = self._make_pair(_FakeChildServer())
+        child.schema["properties"]["ParentObjectID"]["format"] = "date-time"
+        self.assertFalse(child.supports_batching)
