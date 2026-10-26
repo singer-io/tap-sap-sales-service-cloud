@@ -349,6 +349,78 @@ class TestBuildParams(unittest.TestCase):
 
 
 # ---------------------------------------------------------------------------
+# $select pruning
+# ---------------------------------------------------------------------------
+
+class TestBuildSelectParam(unittest.TestCase):
+    """build_params() should prune $select to fields Singer will emit."""
+
+    @staticmethod
+    def _bare_stream():
+        stream = _make_stream(replication_method="FULL_TABLE")
+        stream.key_properties = ["ObjectID"]
+        stream.replication_method = "FULL_TABLE"
+        stream.replication_keys = []
+        return stream
+
+    def test_select_added_for_automatic_and_selected_fields(self):
+        stream = self._bare_stream()
+        stream.metadata[("properties", "ObjectID")] = {
+            "inclusion": "automatic"
+        }
+        stream.metadata[("properties", "ChangedOn")] = {
+            "inclusion": "available"
+        }
+        stream.metadata[("properties", "Name")] = {
+            "inclusion": "available", "selected": True,
+        }
+        params = stream.build_params(state={})
+        self.assertEqual(params["$select"], "Name,ObjectID")
+
+    def test_select_omitted_when_all_fields_selected(self):
+        stream = self._bare_stream()
+        for field in ("ObjectID", "ChangedOn", "Name"):
+            stream.metadata[("properties", field)] = {"selected": True}
+        self.assertNotIn("$select", stream.build_params(state={}))
+
+    def test_select_omitted_for_expand_stream(self):
+        stream = self._bare_stream()
+        stream.expand_nav_property = "Items"
+        stream.expand_parent_entity_set = "ParentCollection"
+        self.assertNotIn("$select", stream.build_params(state={}))
+
+    def test_select_includes_parent_and_orderby_fields(self):
+        stream = self._bare_stream()
+        stream.schema["properties"]["Extra"] = {"type": ["string", "null"]}
+        stream.parent_filter_field = "Name"
+        stream.orderby_field = "ChangedOn"
+        params = stream.build_params(state={})
+        self.assertEqual(params["$select"], "ChangedOn,Name,ObjectID")
+
+    def test_select_includes_child_linkage_fields(self):
+        stream = self._bare_stream()
+        child = MagicMock()
+        child.parent_key_field = "Name"
+        child.parent_secondary_key_field = ""
+        child.synthetic_replication_key = False
+        child.parent_replication_key = ""
+        stream.child_to_sync = [child]
+        params = stream.build_params(state={})
+        self.assertEqual(params["$select"], "Name,ObjectID")
+
+    def test_select_excludes_synthetic_parent_id_field(self):
+        stream = self._bare_stream()
+        stream.schema["properties"]["__parent_account_collection_ObjectID"] = {
+            "type": ["string", "null"]
+        }
+        stream.metadata[("properties", "Name")] = {"selected": True}
+        params = stream.build_params(state={})
+        self.assertNotIn(
+            "__parent_account_collection_ObjectID", params["$select"]
+        )
+
+
+# ---------------------------------------------------------------------------
 # modify_object
 # ---------------------------------------------------------------------------
 

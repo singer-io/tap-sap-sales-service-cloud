@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.0.2
+- Prune OData `$select` to fields Singer will actually emit, cutting network/parse overhead on wide entities. Builds on the parent-child batching in #9.[#10](https://github.com/singer-io/tap-sap-sales-service-cloud/pull/10)
+
 ## 1.0.1
 - Remove `replication-method` from the root-metadata.[#8](https://github.com/singer-io/tap-sap-sales-service-cloud/pull/8)
 

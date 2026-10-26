@@ -268,7 +268,65 @@ class BaseStream(ABC):
         if self.orderby_field:
             params["$orderby"] = self.orderby_field
 
+        select_fields = self._build_select_param()
+        if select_fields:
+            params["$select"] = select_fields
+
         return params
+
+    def _build_select_param(self) -> Optional[str]:
+        """Build a ``$select`` list pruned to fields Singer will emit.
+
+        Unselected fields are otherwise still fetched over the wire and
+        discarded client-side after ``Transformer.transform()`` — wasted
+        bandwidth/parsing that matters on wide entities. Returns ``None``
+        when there is nothing to prune (no properties, $expand in play, or
+        every property is already selected), so the full row is fetched.
+        """
+        if self.expand_nav_property and self.expand_parent_entity_set:
+            return None
+
+        properties = self.schema.get("properties", {})
+        if not properties:
+            return None
+
+        # Fields required by this stream's own logic regardless of
+        # catalog selection (filtering, ordering, parent/child linkage).
+        required = set(self.key_properties)
+        if not self.synthetic_replication_key:
+            required.update(self.replication_keys)
+        for field in (
+            self.parent_filter_field,
+            self.parent_secondary_filter_field,
+            self.orderby_field,
+        ):
+            if field:
+                required.add(field)
+        # Children read specific fields off *this* record to attribute
+        # child rows back to their parent — must not prune those away.
+        for child in self.child_to_sync:
+            if child.parent_key_field:
+                required.add(child.parent_key_field)
+            if child.parent_secondary_key_field:
+                required.add(child.parent_secondary_key_field)
+            if child.synthetic_replication_key and child.parent_replication_key:
+                required.add(child.parent_replication_key)
+
+        selected = set(required)
+        for field_name in properties:
+            field_mdata = self.metadata.get(("properties", field_name), {})
+            if field_mdata.get("inclusion") == "automatic" or field_mdata.get(
+                "selected"
+            ):
+                selected.add(field_name)
+
+        # Drop synthetic fields injected at discovery time (e.g. the
+        # __parent_* linkage field) — they don't exist on the SAP entity
+        # and SAP rejects $select on unknown properties.
+        selected &= set(properties)
+        if not selected or selected >= set(properties):
+            return None
+        return ",".join(sorted(selected))
 
     def _parent_filter_term(self, parent_val: Any) -> str:
         return f"{self.parent_filter_field} eq '{parent_val}'"
