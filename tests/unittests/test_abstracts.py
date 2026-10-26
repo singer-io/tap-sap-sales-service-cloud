@@ -353,7 +353,10 @@ class TestBuildParams(unittest.TestCase):
 # ---------------------------------------------------------------------------
 
 class TestBuildSelectParam(unittest.TestCase):
-    """build_params() should prune $select to fields Singer will emit."""
+    """build_params() should prune $select only for fields the catalog
+    explicitly deselects or marks unsupported. This tap's Transformer does
+    not drop fields based on catalog selection, so a field with no
+    selection metadata at all must still be requested and emitted."""
 
     @staticmethod
     def _bare_stream():
@@ -363,41 +366,43 @@ class TestBuildSelectParam(unittest.TestCase):
         stream.replication_keys = []
         return stream
 
-    def test_select_added_for_automatic_and_selected_fields(self):
+    def test_select_omitted_when_nothing_deselected(self):
+        """No field-level metadata at all -> nothing to prune."""
         stream = self._bare_stream()
-        stream.metadata[("properties", "ObjectID")] = {
-            "inclusion": "automatic"
-        }
-        stream.metadata[("properties", "ChangedOn")] = {
-            "inclusion": "available"
-        }
+        self.assertNotIn("$select", stream.build_params(state={}))
+
+    def test_select_prunes_explicitly_deselected_field(self):
+        stream = self._bare_stream()
+        stream.metadata[("properties", "Name")] = {"selected": False}
+        params = stream.build_params(state={})
+        self.assertEqual(params["$select"], "ChangedOn,ObjectID")
+
+    def test_select_prunes_unsupported_field(self):
+        stream = self._bare_stream()
         stream.metadata[("properties", "Name")] = {
-            "inclusion": "available", "selected": True,
+            "inclusion": "unsupported"
         }
         params = stream.build_params(state={})
-        self.assertEqual(params["$select"], "Name,ObjectID")
-
-    def test_select_omitted_when_all_fields_selected(self):
-        stream = self._bare_stream()
-        for field in ("ObjectID", "ChangedOn", "Name"):
-            stream.metadata[("properties", field)] = {"selected": True}
-        self.assertNotIn("$select", stream.build_params(state={}))
+        self.assertEqual(params["$select"], "ChangedOn,ObjectID")
 
     def test_select_omitted_for_expand_stream(self):
         stream = self._bare_stream()
         stream.expand_nav_property = "Items"
         stream.expand_parent_entity_set = "ParentCollection"
+        stream.metadata[("properties", "Name")] = {"selected": False}
         self.assertNotIn("$select", stream.build_params(state={}))
 
-    def test_select_includes_parent_and_orderby_fields(self):
+    def test_select_keeps_required_fields_even_if_deselected(self):
+        """Parent filter fields are never pruned, even if the catalog
+        (incorrectly) marks them deselected."""
         stream = self._bare_stream()
-        stream.schema["properties"]["Extra"] = {"type": ["string", "null"]}
         stream.parent_filter_field = "Name"
-        stream.orderby_field = "ChangedOn"
+        stream.metadata[("properties", "Name")] = {"selected": False}
+        stream.metadata[("properties", "ChangedOn")] = {"selected": False}
         params = stream.build_params(state={})
-        self.assertEqual(params["$select"], "ChangedOn,Name,ObjectID")
+        self.assertEqual(params["$select"], "Name,ObjectID")
 
-    def test_select_includes_child_linkage_fields(self):
+    def test_select_keeps_child_linkage_fields_even_if_deselected(self):
         stream = self._bare_stream()
         child = MagicMock()
         child.parent_key_field = "Name"
@@ -405,19 +410,20 @@ class TestBuildSelectParam(unittest.TestCase):
         child.synthetic_replication_key = False
         child.parent_replication_key = ""
         stream.child_to_sync = [child]
+        stream.metadata[("properties", "Name")] = {"selected": False}
+        stream.metadata[("properties", "ChangedOn")] = {"selected": False}
         params = stream.build_params(state={})
         self.assertEqual(params["$select"], "Name,ObjectID")
 
-    def test_select_excludes_synthetic_parent_id_field(self):
+    def test_select_always_excludes_synthetic_parent_id_field(self):
+        """Synthetic linkage fields never exist on the SAP entity, so they
+        must be excluded even with no explicit deselection anywhere."""
         stream = self._bare_stream()
         stream.schema["properties"]["__parent_account_collection_ObjectID"] = {
             "type": ["string", "null"]
         }
-        stream.metadata[("properties", "Name")] = {"selected": True}
         params = stream.build_params(state={})
-        self.assertNotIn(
-            "__parent_account_collection_ObjectID", params["$select"]
-        )
+        self.assertEqual(params["$select"], "ChangedOn,Name,ObjectID")
 
 
 # ---------------------------------------------------------------------------

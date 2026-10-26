@@ -277,11 +277,16 @@ class BaseStream(ABC):
     def _build_select_param(self) -> Optional[str]:
         """Build a ``$select`` list pruned to fields Singer will emit.
 
-        Unselected fields are otherwise still fetched over the wire and
-        discarded client-side after ``Transformer.transform()`` — wasted
-        bandwidth/parsing that matters on wide entities. Returns ``None``
-        when there is nothing to prune (no properties, $expand in play, or
-        every property is already selected), so the full row is fetched.
+        Unselected fields are otherwise still fetched over the wire for
+        no benefit — this tap's ``Transformer.transform()`` does not drop
+        fields based on catalog selection, so every field SAP returns is
+        always emitted. A field is only pruned when the catalog *explicitly*
+        deselects it (``"selected": false``) or marks it unsupported;
+        anything else (including fields with no selection metadata at all)
+        is treated as wanted, to avoid silently dropping data the tap has
+        always returned. Returns ``None`` when there is nothing to prune
+        (no properties, $expand in play, or every property is already
+        included), so the full row is fetched.
         """
         if self.expand_nav_property and self.expand_parent_entity_set:
             return None
@@ -315,14 +320,19 @@ class BaseStream(ABC):
         selected = set(required)
         for field_name in properties:
             field_mdata = self.metadata.get(("properties", field_name), {})
-            if field_mdata.get("inclusion") == "automatic" or field_mdata.get(
-                "selected"
-            ):
-                selected.add(field_name)
+            if field_mdata.get("inclusion") == "unsupported":
+                continue
+            if field_mdata.get("selected") is False:
+                continue
+            selected.add(field_name)
 
-        # Drop synthetic fields injected at discovery time (e.g. the
-        # __parent_* linkage field) — they don't exist on the SAP entity
-        # and SAP rejects $select on unknown properties.
+        # Synthetic parent-linkage fields (e.g. __parent_*) are injected
+        # into the schema at discovery time but don't exist on the SAP
+        # entity — SAP rejects $select on unknown properties, so these are
+        # always excluded regardless of selection metadata.
+        selected = {
+            name for name in selected if not name.startswith("__parent_")
+        }
         selected &= set(properties)
         if not selected or selected >= set(properties):
             return None
