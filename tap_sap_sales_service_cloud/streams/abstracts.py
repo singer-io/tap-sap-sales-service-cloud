@@ -41,12 +41,6 @@ CHILD_BATCH_MAX_FILTER_CHARS = 3000
 # with at least one child row matches (or this many chunks have matched).
 CHILD_BATCH_VERIFY_MAX_CHUNKS = 3
 
-# SAP's own server-side (no $top/$skip) pagination caps at 1000 rows/page,
-# but client-side paging (what this tap uses) has no documented upper
-# bound on $top (see C4CODATAAPIDEVGUIDE "Client side paging"). A larger
-# page means fewer round trips for large full-table/incremental syncs,
-# which dominates wall-clock time far more than the modestly larger
-# per-page payload. 10x the server default is a conservative step up.
 DEFAULT_PAGE_SIZE = 10000
 
 
