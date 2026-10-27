@@ -41,6 +41,8 @@ CHILD_BATCH_MAX_FILTER_CHARS = 3000
 # with at least one child row matches (or this many chunks have matched).
 CHILD_BATCH_VERIFY_MAX_CHUNKS = 3
 
+DEFAULT_PAGE_SIZE = 10000
+
 
 class _ChildBatchRejected(Exception):
     """A batched child request failed before any record was received."""
@@ -543,7 +545,7 @@ class BaseStream(ABC):
             return
 
         page_size = int(
-            self.client.config.get("page_size", 1000)
+            self.client.config.get("page_size", DEFAULT_PAGE_SIZE)
         )
         params = self.build_params(state, parent_obj, parent_objs)
         params["$top"] = page_size

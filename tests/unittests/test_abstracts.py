@@ -14,7 +14,9 @@ from tap_sap_sales_service_cloud.exceptions import (
     SAPSalesServiceCloudInternalServerError,
 )
 from tap_sap_sales_service_cloud.metadata_discovery import MDATA_NS
-from tap_sap_sales_service_cloud.streams.abstracts import ODATA_DATE_RE
+from tap_sap_sales_service_cloud.streams.abstracts import (
+    DEFAULT_PAGE_SIZE, ODATA_DATE_RE,
+)
 
 # ---------------------------------------------------------------------------
 # Module-level helpers
@@ -841,6 +843,16 @@ class TestGetRecords(unittest.TestCase):
         list(stream.get_records(state={}))
         self.assertEqual(
             self._params_of_call(stream, 0)["$top"], page_size
+        )
+
+    def test_top_defaults_when_page_size_not_in_config(self):
+        """$top falls back to DEFAULT_PAGE_SIZE when config omits page_size."""
+        stream = self._ft_stream()
+        del stream.client.config["page_size"]
+        stream.client.get.return_value = _make_odata_page(1)
+        list(stream.get_records(state={}))
+        self.assertEqual(
+            self._params_of_call(stream, 0)["$top"], DEFAULT_PAGE_SIZE
         )
 
     def test_inlinecount_only_on_first_page(self):
