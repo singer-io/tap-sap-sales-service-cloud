@@ -5,7 +5,9 @@ Provides:
   - Incremental replication with bookmark management.
   - ``/Date(ms±offset)/`` → RFC-3339 coercion that works on Windows
     for the full Python datetime range (avoids mktime() overflow).
-  - Parent-child stream orchestration with filter injection.
+  - Parent-child stream orchestration with filter injection, batching
+    eligible child requests across several parents with a single-property
+    OR filter.
   - OData ``$expand`` support for computed/read-only entity sets.
   - Singer SCHEMA / RECORD / STATE emission.
 """
@@ -14,17 +16,49 @@ import copy
 import re
 from abc import ABC
 from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, Iterable, Optional
+from typing import Any, Dict, Iterable, List, Optional
 
+from requests.exceptions import Timeout
 from singer import (Transformer, get_bookmark, get_logger, metadata, metrics,
                     write_bookmark, write_record, write_schema)
 from singer.utils import strftime, strptime_with_tz
 
 from tap_sap_sales_service_cloud.exceptions import (
+    SAPSalesServiceCloudBadRequestError,
+    SAPSalesServiceCloudError,
     SAPSalesServiceCloudInternalServerError,
+    SAPSalesServiceCloudServer5xxError,
 )
 
 LOGGER = get_logger()
+
+# Child requests for several parents are combined into one
+# '(FK eq 'a' or FK eq 'b' ...)' filter. SAP C4C only supports OR on a
+# single property, so only children filtered by one FK field are batched.
+CHILD_BATCH_MAX_PARENTS = 50
+CHILD_BATCH_MAX_FILTER_CHARS = 3000
+# Batched results are cross-checked against per-parent counts until a chunk
+# with at least one child row matches (or this many chunks have matched).
+CHILD_BATCH_VERIFY_MAX_CHUNKS = 3
+
+DEFAULT_PAGE_SIZE = 10000
+
+
+class _ChildBatchRejected(Exception):
+    """A batched child request failed before any record was received."""
+
+
+def _is_batch_rejection(exc: Exception) -> bool:
+    """Return True for errors a smaller batch could plausibly avoid."""
+    status = getattr(getattr(exc, "response", None), "status_code", None)
+    return status in (413, 414, 431) or isinstance(
+        exc,
+        (
+            SAPSalesServiceCloudBadRequestError,
+            SAPSalesServiceCloudServer5xxError,
+            Timeout,
+        ),
+    )
 
 # Regex for SAP OData V2 /Date(milliseconds±offset)/ values.
 ODATA_DATE_RE = re.compile(
@@ -134,6 +168,10 @@ class BaseStream(ABC):
         # construct. Set once get_records() detects that failure so later
         # pages/parent-scoped calls skip straight to the plain 'ge' filter.
         self._skip_null_filter = False
+        self._batch_max_parents = CHILD_BATCH_MAX_PARENTS
+        self._batching_disabled = False
+        self._batch_verified = False
+        self._batch_verify_attempts = 0
 
     # ------------------------------------------------------------------
     # Catalog helpers
@@ -148,9 +186,16 @@ class BaseStream(ABC):
     # ------------------------------------------------------------------
 
     def build_params(
-        self, state: Dict, parent_obj: Optional[Dict] = None
+        self,
+        state: Dict,
+        parent_obj: Optional[Dict] = None,
+        parent_objs: Optional[List[Dict]] = None,
     ) -> Dict:
-        """Build OData query parameters for a single page fetch."""
+        """Build OData query parameters for a single page fetch.
+
+        *parent_objs* scopes the request to several parents at once with an
+        OR filter on ``parent_filter_field`` (see :meth:`sync_parent_batch`).
+        """
         params: Dict[str, Any] = {}
 
         if (
@@ -194,9 +239,12 @@ class BaseStream(ABC):
                 # get_records() if the backend rejects this construct.
                 params["$filter"] = f"({key} eq null or {date_clause})"
 
-        if parent_obj and self.parent_filter_field:
+        clause = None
+        if parent_objs and self.parent_filter_field:
+            clause = self._batch_filter_clause(parent_objs)
+        elif parent_obj and self.parent_filter_field:
             parent_val = parent_obj[self.parent_key_field]
-            clause = f"{self.parent_filter_field} eq '{parent_val}'"
+            clause = self._parent_filter_term(parent_val)
             # Append optional secondary filter field.
             if (
                 self.parent_secondary_filter_field
@@ -208,6 +256,7 @@ class BaseStream(ABC):
                         f" and {self.parent_secondary_filter_field} "
                         f"eq '{sec_val}'"
                     )
+        if clause:
             params["$filter"] = (
                 f"{params['$filter']} and {clause}"
                 if "$filter" in params
@@ -222,6 +271,16 @@ class BaseStream(ABC):
             params["$orderby"] = self.orderby_field
 
         return params
+
+    def _parent_filter_term(self, parent_val: Any) -> str:
+        return f"{self.parent_filter_field} eq '{parent_val}'"
+
+    def _batch_filter_clause(self, parent_objs: List[Dict]) -> str:
+        terms = " or ".join(
+            self._parent_filter_term(parent[self.parent_key_field])
+            for parent in parent_objs
+        )
+        return f"({terms})"
 
     def _strip_null_inclusion_filter(self, filter_value: str) -> Optional[str]:
         """Remove the '(key eq null or ...)' wrapper from *filter_value*.
@@ -469,7 +528,10 @@ class BaseStream(ABC):
             yield from results
 
     def get_records(
-        self, state: Dict, parent_obj: Optional[Dict] = None
+        self,
+        state: Dict,
+        parent_obj: Optional[Dict] = None,
+        parent_objs: Optional[List[Dict]] = None,
     ) -> Iterable[Dict]:
         """Iterate records using client-controlled $skip/$top pagination.
 
@@ -483,9 +545,9 @@ class BaseStream(ABC):
             return
 
         page_size = int(
-            self.client.config.get("page_size", 1000)
+            self.client.config.get("page_size", DEFAULT_PAGE_SIZE)
         )
-        params = self.build_params(state, parent_obj)
+        params = self.build_params(state, parent_obj, parent_objs)
         params["$top"] = page_size
         skip = 0
 
@@ -507,6 +569,11 @@ class BaseStream(ABC):
                     },
                 )
             except SAPSalesServiceCloudInternalServerError as exc:
+                # A 500 on a batched request may be caused by the batch
+                # itself; let sync_parent_batch() split it instead of
+                # dropping the NULL-inclusive clause for the whole stream.
+                if parent_objs:
+                    raise
                 fallback_filter = self._strip_null_inclusion_filter(
                     params.get("$filter", "")
                 )
@@ -558,6 +625,198 @@ class BaseStream(ABC):
             )
 
     # ------------------------------------------------------------------
+    # Batched child sync
+    # ------------------------------------------------------------------
+
+    @property
+    def supports_batching(self) -> bool:
+        """Whether child requests can be combined across parents.
+
+        Only plain string foreign keys are eligible: SAP C4C ORs only work on
+        a single property, and the parent of every returned row must be
+        recovered exactly from the row's own foreign-key value.
+        """
+        fk_schema = self.schema.get("properties", {}).get(
+            self.parent_filter_field, {}
+        )
+        fk_types = fk_schema.get("type", [])
+        return bool(
+            not self._batching_disabled
+            and self.parent
+            and self.parent_filter_field
+            and not self.parent_secondary_filter_field
+            and not self.parent_secondary_key_field
+            and not (self.expand_nav_property and self.expand_parent_entity_set)
+            and "string" in ([fk_types] if isinstance(fk_types, str) else fk_types)
+            and fk_schema.get("format") != "date-time"
+        )
+
+    def batch_has_room(self, pending: List[Dict], parent: Dict) -> bool:
+        """Whether *parent* can join the *pending* batch for this child."""
+        if len(pending) >= self._batch_max_parents:
+            return False
+        key = str(parent[self.parent_key_field])
+        if any(str(p[self.parent_key_field]) == key for p in pending):
+            return False
+        candidate = self._batch_filter_clause(pending + [parent])
+        return len(candidate) <= CHILD_BATCH_MAX_FILTER_CHARS
+
+    def _ensure_effective_bookmark(self, state: Dict) -> Optional[str]:
+        """Resolve the run-wide comparison bookmark once; return its key."""
+        bookmark_key = (
+            self.replication_keys[0] if self.replication_keys else None
+        )
+        if not bookmark_key:
+            self.effective_bookmark = None
+        elif self.effective_bookmark is _BOOKMARK_UNSET:
+            self.effective_bookmark = self._resolve_effective_bookmark(
+                state, bookmark_key
+            )
+        return bookmark_key
+
+    def _count_records(
+        self,
+        state: Dict,
+        parent_obj: Optional[Dict] = None,
+        parent_objs: Optional[List[Dict]] = None,
+    ) -> Optional[int]:
+        """Return the server-side ``$inlinecount`` for a child query."""
+        params = self.build_params(state, parent_obj, parent_objs)
+        params["$top"] = 1
+        params["$inlinecount"] = "allpages"
+        payload = self.client.get(
+            self.path,
+            params=params,
+            headers={"Authorization": self.client.get_auth_header()},
+        )
+        try:
+            return int((payload or {}).get("d", {}).get("__count"))
+        except (TypeError, ValueError):
+            return None
+
+    def _disable_batching(self, reason: str) -> None:
+        LOGGER.warning(
+            "Stream '%s' — batched child requests disabled for this run; "
+            "falling back to one request per parent. Reason: %s",
+            self.tap_stream_id,
+            reason,
+        )
+        self._batching_disabled = True
+
+    def _verify_batch(self, state: Dict, parents: List[Dict]) -> bool:
+        """Check that the batched filter returns exactly the per-parent rows.
+
+        Guards against SAP evaluating the OR filter differently from the
+        single-parent filter (which would otherwise silently drop rows).
+        Returns False, and disables batching, when that cannot be confirmed.
+        """
+        self._ensure_effective_bookmark(state)
+        try:
+            batch_count = self._count_records(state, parent_objs=parents)
+        except (SAPSalesServiceCloudError, Timeout) as exc:
+            if _is_batch_rejection(exc):
+                raise _ChildBatchRejected(str(exc)) from exc
+            raise
+
+        try:
+            counts = [self._count_records(state, parent_obj=p) for p in parents]
+        except (SAPSalesServiceCloudError, Timeout) as exc:
+            self._disable_batching(f"per-parent count check failed: {exc}")
+            return False
+        if batch_count is None or None in counts or batch_count != sum(counts):
+            self._disable_batching(
+                f"batched count {batch_count} != per-parent counts {counts}"
+            )
+            return False
+
+        self._batch_verify_attempts += 1
+        if sum(counts) > 0 or (
+            self._batch_verify_attempts >= CHILD_BATCH_VERIFY_MAX_CHUNKS
+        ):
+            self._batch_verified = True
+            LOGGER.info(
+                "Stream '%s' — batched child requests verified "
+                "(%s parents, %s records).",
+                self.tap_stream_id,
+                len(parents),
+                batch_count,
+            )
+        return True
+
+    def sync_parent_batch(
+        self, state: Dict, transformer: Transformer, parents: List[Dict]
+    ) -> None:
+        """Sync this child for several parents, batching when possible.
+
+        Falls back to the per-parent path (one request per parent) when the
+        stream is ineligible or batching cannot be verified, and splits the
+        batch when SAP rejects it before any record was received.
+        """
+        if len(parents) > 1 and self.supports_batching:
+            try:
+                if self._batch_verified or self._verify_batch(state, parents):
+                    self.sync(state, transformer, parent_objs=parents)
+                    return
+            except _ChildBatchRejected as exc:
+                mid = len(parents) // 2
+                self._batch_max_parents = mid
+                LOGGER.warning(
+                    "Stream '%s' — batched request for %s parents rejected; "
+                    "retrying in batches of %s. Error: %s",
+                    self.tap_stream_id, len(parents), mid, exc,
+                )
+                self.sync_parent_batch(state, transformer, parents[:mid])
+                self.sync_parent_batch(state, transformer, parents[mid:])
+                return
+        for parent in parents:
+            self.sync(state, transformer, parent_obj=parent)
+
+    @staticmethod
+    def _reject_unfetched_batch(records: Iterable[Dict]) -> Iterable[Dict]:
+        """Turn a failure before the first batched record into a rejection.
+
+        Once any record has been received the error is re-raised unchanged
+        (fail fast), as splitting would re-emit records.
+        """
+        fetched_any = False
+        try:
+            for record in records:
+                fetched_any = True
+                yield record
+        except (SAPSalesServiceCloudError, Timeout) as exc:
+            if not fetched_any and _is_batch_rejection(exc):
+                raise _ChildBatchRejected(str(exc)) from exc
+            raise
+
+    def _batch_parent_matcher(self, parent_objs: List[Dict]):
+        """Build a function mapping a batched child row to its parent."""
+        by_key = {str(p[self.parent_key_field]): p for p in parent_objs}
+        # Case-insensitive fallback; ambiguous keys must match exactly.
+        by_folded: Dict[str, Optional[Dict]] = {}
+        for key, parent in by_key.items():
+            by_folded[key.casefold()] = (
+                None if key.casefold() in by_folded else parent
+            )
+
+        def match(record: Dict) -> Dict:
+            fk_value = record.get(self.parent_filter_field)
+            if fk_value is not None:
+                fk_value = str(fk_value)
+                parent = by_key.get(fk_value) or by_folded.get(
+                    fk_value.casefold()
+                )
+                if parent is not None:
+                    return parent
+            raise SAPSalesServiceCloudError(
+                f"Stream '{self.tap_stream_id}' — batched child record has "
+                f"{self.parent_filter_field}={fk_value!r}, which matches no "
+                "parent in its batch. Aborting rather than misattributing "
+                "the record."
+            )
+
+        return match
+
+    # ------------------------------------------------------------------
     # Singer emission
     # ------------------------------------------------------------------
 
@@ -570,21 +829,16 @@ class BaseStream(ABC):
         state: Dict,
         transformer: Transformer,
         parent_obj: Optional[Dict] = None,
+        parent_objs: Optional[List[Dict]] = None,
     ) -> int:
         """Sync stream records and emit Singer RECORD / STATE messages.
 
+        *parent_objs* syncs this child for several parents in one batched
+        request; each record is attributed to its parent by foreign key.
+
         Returns the total number of records emitted.
         """
-        bookmark_key = (
-            self.replication_keys[0] if self.replication_keys else None
-        )
-
-        if not bookmark_key:
-            self.effective_bookmark = None
-        elif self.effective_bookmark is _BOOKMARK_UNSET:
-            self.effective_bookmark = self._resolve_effective_bookmark(
-                state, bookmark_key
-            )
+        bookmark_key = self._ensure_effective_bookmark(state)
 
         bookmark = self.effective_bookmark
 
@@ -592,11 +846,29 @@ class BaseStream(ABC):
         # start_date so that zero-record syncs never write a spurious bookmark.
         current_max_bookmark = None
 
+        records = self.get_records(
+            state=state, parent_obj=parent_obj, parent_objs=parent_objs
+        )
+        match_parent = None
+        if parent_objs:
+            records = self._reject_unfetched_batch(records)
+            match_parent = self._batch_parent_matcher(parent_objs)
+
+        batch_children = [
+            child for child in self.child_to_sync if child.supports_batching
+        ]
+        inline_children = [
+            child for child in self.child_to_sync
+            if child not in batch_children
+        ]
+        pending_parents: List[Dict] = []
+
         with metrics.record_counter(self.tap_stream_id) as counter:
-            for record in self.get_records(
-                state=state, parent_obj=parent_obj
-            ):
-                record = self.modify_object(record, parent_obj)
+            for record in records:
+                source_parent = (
+                    match_parent(record) if match_parent else parent_obj
+                )
+                record = self.modify_object(record, source_parent)
                 record = self.normalize_record_datetimes(copy.deepcopy(record))
                 transformed_record = transformer.transform(
                     record, self.schema, self.metadata
@@ -633,12 +905,28 @@ class BaseStream(ABC):
                     # Intentionally outside is_selected(): an unselected
                     # parent still drives child syncs by supplying parent_obj
                     # without emitting its own SCHEMA/RECORD messages.
-                    for child_stream in self.child_to_sync:
+                    for child_stream in inline_children:
                         child_stream.sync(
                             state=state,
                             transformer=transformer,
                             parent_obj=transformed_record,
                         )
+                    if pending_parents and not all(
+                        child.batch_has_room(pending_parents, transformed_record)
+                        for child in batch_children
+                    ):
+                        for child_stream in batch_children:
+                            child_stream.sync_parent_batch(
+                                state, transformer, pending_parents
+                            )
+                        pending_parents = []
+                    if batch_children:
+                        pending_parents.append(transformed_record)
+
+            for child_stream in batch_children if pending_parents else []:
+                child_stream.sync_parent_batch(
+                    state, transformer, pending_parents
+                )
 
             if bookmark_key and current_max_bookmark:
                 self.write_bookmark(

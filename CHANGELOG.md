@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.0.2
+- Batch parent child sync.[#9](https://github.com/singer-io/tap-sap-sales-service-cloud/pull/9)
+
 ## 1.0.1
 - Remove `replication-method` from the root-metadata.[#8](https://github.com/singer-io/tap-sap-sales-service-cloud/pull/8)
 
