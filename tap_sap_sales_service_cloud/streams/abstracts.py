@@ -40,6 +40,9 @@ CHILD_BATCH_MAX_FILTER_CHARS = 3000
 # Batched results are cross-checked against per-parent counts until a chunk
 # with at least one child row matches (or this many chunks have matched).
 CHILD_BATCH_VERIFY_MAX_CHUNKS = 3
+# After a rejection shrinks the batch limit, this many consecutive successful
+# batches double it again (capped at CHILD_BATCH_MAX_PARENTS).
+CHILD_BATCH_GROW_AFTER = 5
 
 DEFAULT_PAGE_SIZE = 10000
 
@@ -172,6 +175,7 @@ class BaseStream(ABC):
         self._batching_disabled = False
         self._batch_verified = False
         self._batch_verify_attempts = 0
+        self._batch_success_streak = 0
 
     # ------------------------------------------------------------------
     # Catalog helpers
@@ -756,10 +760,12 @@ class BaseStream(ABC):
             try:
                 if self._batch_verified or self._verify_batch(state, parents):
                     self.sync(state, transformer, parent_objs=parents)
+                    self._on_batch_success(len(parents))
                     return
             except _ChildBatchRejected as exc:
                 mid = len(parents) // 2
-                self._batch_max_parents = mid
+                self._batch_max_parents = max(1, mid)
+                self._batch_success_streak = 0
                 LOGGER.warning(
                     "Stream '%s' — batched request for %s parents rejected; "
                     "retrying in batches of %s. Error: %s",
@@ -770,6 +776,30 @@ class BaseStream(ABC):
                 return
         for parent in parents:
             self.sync(state, transformer, parent_obj=parent)
+
+    def _on_batch_success(self, size: int) -> None:
+        """Recover the batch limit after a rejection shrank it.
+
+        Never stay below a size that just succeeded, and after
+        CHILD_BATCH_GROW_AFTER consecutive successes double the limit again,
+        so one rejected batch does not pin the stream to tiny batches for
+        the rest of the run.
+        """
+        self._batch_max_parents = max(self._batch_max_parents, size)
+        self._batch_success_streak += 1
+        if (
+            self._batch_success_streak >= CHILD_BATCH_GROW_AFTER
+            and self._batch_max_parents < CHILD_BATCH_MAX_PARENTS
+        ):
+            self._batch_max_parents = min(
+                CHILD_BATCH_MAX_PARENTS, self._batch_max_parents * 2
+            )
+            self._batch_success_streak = 0
+            LOGGER.info(
+                "Stream '%s' — batch limit raised to %s parents.",
+                self.tap_stream_id,
+                self._batch_max_parents,
+            )
 
     @staticmethod
     def _reject_unfetched_batch(records: Iterable[Dict]) -> Iterable[Dict]:
@@ -861,7 +891,11 @@ class BaseStream(ABC):
             child for child in self.child_to_sync
             if child not in batch_children
         ]
-        pending_parents: List[Dict] = []
+        # One pending queue per batched child, so a child whose batch limit
+        # shrank (e.g. after a rejection) does not force the others to flush.
+        pending: Dict[int, List[Dict]] = {
+            id(child): [] for child in batch_children
+        }
 
         with metrics.record_counter(self.tap_stream_id) as counter:
             for record in records:
@@ -911,22 +945,21 @@ class BaseStream(ABC):
                             transformer=transformer,
                             parent_obj=transformed_record,
                         )
-                    if pending_parents and not all(
-                        child.batch_has_room(pending_parents, transformed_record)
-                        for child in batch_children
-                    ):
-                        for child_stream in batch_children:
+                    for child_stream in batch_children:
+                        queue = pending[id(child_stream)]
+                        if queue and not child_stream.batch_has_room(
+                            queue, transformed_record
+                        ):
                             child_stream.sync_parent_batch(
-                                state, transformer, pending_parents
+                                state, transformer, queue
                             )
-                        pending_parents = []
-                    if batch_children:
-                        pending_parents.append(transformed_record)
+                            queue = pending[id(child_stream)] = []
+                        queue.append(transformed_record)
 
-            for child_stream in batch_children if pending_parents else []:
-                child_stream.sync_parent_batch(
-                    state, transformer, pending_parents
-                )
+            for child_stream in batch_children:
+                queue = pending[id(child_stream)]
+                if queue:
+                    child_stream.sync_parent_batch(state, transformer, queue)
 
             if bookmark_key and current_max_bookmark:
                 self.write_bookmark(
