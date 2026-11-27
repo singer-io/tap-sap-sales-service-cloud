@@ -5,6 +5,7 @@ import unittest
 from unittest.mock import MagicMock, patch
 
 from parameterized import parameterized
+from requests.exceptions import Timeout
 from singer import get_bookmark
 from singer import metadata as md
 
@@ -1156,8 +1157,85 @@ class TestBatchedChildSync(unittest.TestCase):
             sorted(self._run(parent)),
             sorted(self._per_parent_output(child_kwargs=kwargs)),
         )
-        self.assertEqual(child._batch_max_parents, 1)
+        self.assertGreaterEqual(child._batch_rejections, 1)
         self.assertFalse(child._skip_null_filter)
+
+    def test_null_filter_error_retries_same_batch_without_clause(self):
+        def reject_null_clause(ids, params):
+            if "eq null" in params["$filter"]:
+                raise SAPSalesServiceCloudInternalServerError(
+                    "exception 70023000: rootWhere == nullptr"
+                )
+
+        kwargs = {"replication_method": "INCREMENTAL"}
+        server = _FakeChildServer(on_request=reject_null_clause)
+        parent, child = self._make_pair(server, child_kwargs=kwargs)
+        self.assertEqual(
+            sorted(self._run(parent)),
+            sorted(self._per_parent_output(child_kwargs=kwargs)),
+        )
+        self.assertTrue(child._skip_null_filter)
+        self.assertEqual(child._batch_max_parents, 2)
+        self.assertEqual(child._batch_rejections, 0)
+        self.assertEqual(
+            server.data_filters, [["P1", "P2"], ["P3", "P4"], ["P5"]]
+        )
+
+    def test_null_filter_error_unrelated_to_clause_splits_and_keeps_it(self):
+        def reject_batches(ids, params):
+            if len(ids) > 1:
+                raise SAPSalesServiceCloudInternalServerError(
+                    "exception 70023000: rootWhere == nullptr"
+                )
+
+        kwargs = {"replication_method": "INCREMENTAL"}
+        parent, child = self._make_pair(
+            _FakeChildServer(on_request=reject_batches), child_kwargs=kwargs
+        )
+        child._batch_verified = True
+        self.assertEqual(
+            sorted(self._run(parent)),
+            sorted(self._per_parent_output(child_kwargs=kwargs)),
+        )
+        self.assertFalse(child._skip_null_filter)
+        self.assertGreaterEqual(child._batch_rejections, 1)
+
+    def test_timeout_on_null_filter_retry_restores_clause_and_splits(self):
+        def fail_batches(ids, params):
+            if len(ids) > 1:
+                if "eq null" in params["$filter"]:
+                    raise SAPSalesServiceCloudInternalServerError(
+                        "exception 70023000: rootWhere == nullptr"
+                    )
+                raise Timeout("read timed out")
+
+        kwargs = {"replication_method": "INCREMENTAL"}
+        parent, child = self._make_pair(
+            _FakeChildServer(on_request=fail_batches), child_kwargs=kwargs
+        )
+        child._batch_verified = True
+        self.assertEqual(
+            sorted(self._run(parent)),
+            sorted(self._per_parent_output(child_kwargs=kwargs)),
+        )
+        self.assertFalse(child._skip_null_filter)
+        self.assertGreaterEqual(child._batch_rejections, 1)
+
+    def test_batch_limit_reduction_is_logged(self):
+        def reject_batches(ids, params):
+            if len(ids) > 1:
+                raise SAPSalesServiceCloudBadRequestError("rejected")
+
+        parent, child = self._make_pair(
+            _FakeChildServer(on_request=reject_batches)
+        )
+        child._batch_verified = True
+        with patch(
+            "tap_sap_sales_service_cloud.streams.abstracts.LOGGER"
+        ) as logger:
+            self._run(parent)
+        messages = [c.args[0] % c.args[1:] for c in logger.warning.call_args_list]
+        self.assertTrue(any("limit 2 -> 1" in m for m in messages))
 
     def test_unmatched_batched_record_aborts(self):
         rows = dict(_CHILD_ROWS)
@@ -1200,3 +1278,106 @@ class TestBatchedChildSync(unittest.TestCase):
         _, child = self._make_pair(_FakeChildServer())
         child.schema["properties"]["ParentObjectID"]["format"] = "date-time"
         self.assertFalse(child.supports_batching)
+
+
+class TestBatchLimitRecovery(unittest.TestCase):
+    """SAC-32736: a rejection must not pin the batch limit for the whole run."""
+
+    PARENT_IDS = TestBatchedChildSync.PARENT_IDS
+    _transformer = staticmethod(TestBatchedChildSync._transformer)
+    _make_pair = TestBatchedChildSync._make_pair
+    _run = TestBatchedChildSync._run
+    _per_parent_output = TestBatchedChildSync._per_parent_output
+
+    def _add_child(self, parent, stream_id, server, limit):
+        child = _make_stream(stream_id=stream_id,
+                             replication_method="FULL_TABLE")
+        child.parent = "test_stream"
+        child.parent_filter_field = "ParentObjectID"
+        child.parent_key_field = "ObjectID"
+        child.path = f"/{stream_id}"
+        child.schema["properties"]["ParentObjectID"] = {
+            "type": ["string", "null"]
+        }
+        child.client.get.side_effect = server
+        child.client.config["page_size"] = 1000
+        child._batch_max_parents = limit
+        child._batch_verified = True
+        parent.child_to_sync.append(child)
+        return child
+
+    def test_limit_recovers_after_3_to_1_halving(self):
+        # Same shape as conn 13917: a batch of 3 is rejected, 2 is accepted.
+        def reject_3_plus(ids, params):
+            if len(ids) >= 3:
+                raise SAPSalesServiceCloudInternalServerError("TREX 500")
+
+        server = _FakeChildServer(on_request=reject_3_plus)
+        parent, child = self._make_pair(server)
+        child._batch_max_parents = 3
+        child._batch_verified = True
+        self.assertEqual(sorted(self._run(parent)),
+                         sorted(self._per_parent_output()))
+        # Halving 3 -> 1 must not stick: the 2-parent half succeeded.
+        self.assertEqual(child._batch_max_parents, 2)
+        self.assertIn(["P4", "P5"], server.data_filters)
+
+    def test_limit_grows_back_after_successes(self):
+        state = {"rejected": False}
+
+        def reject_first(ids, params):
+            if len(ids) > 1 and not state["rejected"]:
+                state["rejected"] = True
+                raise SAPSalesServiceCloudInternalServerError("TREX 500")
+
+        ids = [f"P{i}" for i in range(1, 61)]
+        server = _FakeChildServer(on_request=reject_first)
+        parent, child = self._make_pair(server, parent_ids=ids)
+        child._batch_max_parents = 8
+        child._batch_verified = True
+        self.assertEqual(sorted(self._run(parent)),
+                         sorted(self._per_parent_output(ids)))
+        # Shrunk to 4 by the rejection, then grown back past the old size.
+        self.assertGreaterEqual(child._batch_max_parents, 8)
+        self.assertTrue(any(len(f) >= 8 for f in server.data_filters[1:]))
+
+    def test_limit_recovers_from_2_to_1_via_singleton_successes(self):
+        state = {"rejected": False}
+
+        def reject_first(ids, params):
+            if len(ids) > 1 and not state["rejected"]:
+                state["rejected"] = True
+                raise SAPSalesServiceCloudInternalServerError("TREX 500")
+
+        ids = [f"P{i}" for i in range(1, 8)]
+        parent, child = self._make_pair(
+            _FakeChildServer(on_request=reject_first), parent_ids=ids
+        )
+        child._batch_verified = True
+        self.assertEqual(sorted(self._run(parent)),
+                         sorted(self._per_parent_output(ids)))
+        # The 2-parent rejection pins the limit at 1; only singleton
+        # successes can lift it, and 5 of them double it back to 2.
+        self.assertEqual(child._batch_max_parents, 2)
+
+    def test_one_throttled_child_does_not_throttle_others(self):
+        def reject_batches(ids, params):
+            if len(ids) > 1:
+                raise SAPSalesServiceCloudInternalServerError("TREX 500")
+
+        throttled_server = _FakeChildServer(on_request=reject_batches)
+        parent, throttled = self._make_pair(throttled_server)
+        throttled._batch_verified = True
+        healthy_server = _FakeChildServer()
+        self._add_child(parent, "child_b", healthy_server, limit=2)
+
+        written = []
+        with patch(_WR, side_effect=lambda s, r: written.append((s, r))):
+            parent.sync(state={}, transformer=self._transformer())
+
+        self.assertGreaterEqual(throttled._batch_rejections, 1)
+        # The healthy child still sends multi-parent batches.
+        self.assertEqual(healthy_server.data_filters,
+                         [["P1", "P2"], ["P3", "P4"], ["P5"]])
+        got_b = sorted(r["ObjectID"] for s, r in written if s == "child_b")
+        self.assertEqual(got_b, ["C1", "C2", "C3", "C4", "C5"])

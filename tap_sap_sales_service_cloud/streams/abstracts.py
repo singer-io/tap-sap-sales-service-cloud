@@ -23,6 +23,9 @@ from singer import (Transformer, get_bookmark, get_logger, metadata, metrics,
                     write_bookmark, write_record, write_schema)
 from singer.utils import strftime, strptime_with_tz
 
+from tap_sap_sales_service_cloud.client import (
+    _is_non_retryable_null_filter_error,
+)
 from tap_sap_sales_service_cloud.exceptions import (
     SAPSalesServiceCloudBadRequestError,
     SAPSalesServiceCloudError,
@@ -40,6 +43,9 @@ CHILD_BATCH_MAX_FILTER_CHARS = 3000
 # Batched results are cross-checked against per-parent counts until a chunk
 # with at least one child row matches (or this many chunks have matched).
 CHILD_BATCH_VERIFY_MAX_CHUNKS = 3
+# After a rejection shrinks the batch limit, this many consecutive successful
+# batches double it again (capped at CHILD_BATCH_MAX_PARENTS).
+CHILD_BATCH_GROW_AFTER = 5
 
 DEFAULT_PAGE_SIZE = 10000
 
@@ -169,9 +175,11 @@ class BaseStream(ABC):
         # pages/parent-scoped calls skip straight to the plain 'ge' filter.
         self._skip_null_filter = False
         self._batch_max_parents = CHILD_BATCH_MAX_PARENTS
+        self._batch_rejections = 0
         self._batching_disabled = False
         self._batch_verified = False
         self._batch_verify_attempts = 0
+        self._batch_success_streak = 0
 
     # ------------------------------------------------------------------
     # Catalog helpers
@@ -527,6 +535,64 @@ class BaseStream(ABC):
                 results = []
             yield from results
 
+    def _get_with_null_filter_fallback(
+        self, params: Dict, batched: bool = False
+    ) -> Optional[Dict]:
+        """GET ``self.path``, dropping the NULL-inclusive clause on a 500.
+
+        *params* is updated in place, so later pages keep the fallback.
+
+        A batched request is only retried when the error carries the TREX
+        NULL-filter signature; any other 500 is left to
+        sync_parent_batch() to split. If the retry without the clause also
+        fails, the clause is restored (it was not the cause) and the error
+        is raised so the batch is split with NULL rows still captured.
+        """
+        def fetch() -> Optional[Dict]:
+            return self.client.get(
+                self.path,
+                params=params,
+                headers={"Authorization": self.client.get_auth_header()},
+            )
+
+        try:
+            return fetch()
+        except SAPSalesServiceCloudInternalServerError as exc:
+            if batched and not _is_non_retryable_null_filter_error(exc):
+                raise
+            original_filter = params.get("$filter", "")
+            fallback_filter = self._strip_null_inclusion_filter(
+                original_filter
+            )
+            if fallback_filter is None:
+                raise
+            LOGGER.warning(
+                "Stream '%s' — backend rejected the NULL-inclusive "
+                "$filter (likely a TREX/HANA-view-backed entity); "
+                "retrying %s without it. Records with a NULL "
+                "replication key will not be captured for this "
+                "stream. Error: %s",
+                self.tap_stream_id,
+                "the same batch" if batched else "the request",
+                exc,
+            )
+            self._skip_null_filter = True
+            params["$filter"] = fallback_filter
+            if not batched:
+                return fetch()
+            try:
+                return fetch()
+            except (SAPSalesServiceCloudError, Timeout):
+                self._skip_null_filter = False
+                params["$filter"] = original_filter
+                LOGGER.warning(
+                    "Stream '%s' — batch still failed without the "
+                    "NULL-inclusive $filter, so it was not the cause; "
+                    "keeping it and splitting the batch instead.",
+                    self.tap_stream_id,
+                )
+                raise
+
     def get_records(
         self,
         state: Dict,
@@ -560,42 +626,9 @@ class BaseStream(ABC):
             else:
                 params.pop("$inlinecount", None)
 
-            try:
-                payload = self.client.get(
-                    self.path,
-                    params=params,
-                    headers={
-                        "Authorization": self.client.get_auth_header()
-                    },
-                )
-            except SAPSalesServiceCloudInternalServerError as exc:
-                # A 500 on a batched request may be caused by the batch
-                # itself; let sync_parent_batch() split it instead of
-                # dropping the NULL-inclusive clause for the whole stream.
-                if parent_objs:
-                    raise
-                fallback_filter = self._strip_null_inclusion_filter(
-                    params.get("$filter", "")
-                )
-                if fallback_filter is None:
-                    raise
-                LOGGER.warning(
-                    "Stream '%s' — backend rejected the NULL-inclusive "
-                    "$filter (likely a TREX/HANA-view-backed entity); "
-                    "retrying without it. Records with a NULL "
-                    "replication key will not be captured for this "
-                    "stream. Error: %s",
-                    self.tap_stream_id, exc,
-                )
-                self._skip_null_filter = True
-                params["$filter"] = fallback_filter
-                payload = self.client.get(
-                    self.path,
-                    params=params,
-                    headers={
-                        "Authorization": self.client.get_auth_header()
-                    },
-                )
+            payload = self._get_with_null_filter_fallback(
+                params, batched=bool(parent_objs)
+            )
 
             if not payload:
                 break
@@ -684,10 +717,8 @@ class BaseStream(ABC):
         params = self.build_params(state, parent_obj, parent_objs)
         params["$top"] = 1
         params["$inlinecount"] = "allpages"
-        payload = self.client.get(
-            self.path,
-            params=params,
-            headers={"Authorization": self.client.get_auth_header()},
+        payload = self._get_with_null_filter_fallback(
+            params, batched=bool(parent_objs)
         )
         try:
             return int((payload or {}).get("d", {}).get("__count"))
@@ -756,20 +787,55 @@ class BaseStream(ABC):
             try:
                 if self._batch_verified or self._verify_batch(state, parents):
                     self.sync(state, transformer, parent_objs=parents)
+                    self._on_batch_success(len(parents))
                     return
             except _ChildBatchRejected as exc:
                 mid = len(parents) // 2
-                self._batch_max_parents = mid
+                previous_limit = self._batch_max_parents
+                self._batch_max_parents = max(1, mid)
+                self._batch_success_streak = 0
+                self._batch_rejections += 1
                 LOGGER.warning(
-                    "Stream '%s' — batched request for %s parents rejected; "
-                    "retrying in batches of %s. Error: %s",
-                    self.tap_stream_id, len(parents), mid, exc,
+                    "Stream '%s' — batched request for %s parents rejected "
+                    "(rejection #%s, null-filter error: %s); batch limit "
+                    "%s -> %s, retrying in batches of %s. Error: %s",
+                    self.tap_stream_id, len(parents), self._batch_rejections,
+                    _is_non_retryable_null_filter_error(exc),
+                    previous_limit, self._batch_max_parents, mid, exc,
                 )
                 self.sync_parent_batch(state, transformer, parents[:mid])
                 self.sync_parent_batch(state, transformer, parents[mid:])
                 return
         for parent in parents:
             self.sync(state, transformer, parent_obj=parent)
+        # A lone parent never reaches the batched path above, so count its
+        # success here; otherwise a limit of 1 could never grow back.
+        if len(parents) == 1 and self.supports_batching:
+            self._on_batch_success(1)
+
+    def _on_batch_success(self, size: int) -> None:
+        """Recover the batch limit after a rejection shrank it.
+
+        Never stay below a size that just succeeded, and after
+        CHILD_BATCH_GROW_AFTER consecutive successes double the limit again,
+        so one rejected batch does not pin the stream to tiny batches for
+        the rest of the run.
+        """
+        self._batch_max_parents = max(self._batch_max_parents, size)
+        self._batch_success_streak += 1
+        if (
+            self._batch_success_streak >= CHILD_BATCH_GROW_AFTER
+            and self._batch_max_parents < CHILD_BATCH_MAX_PARENTS
+        ):
+            self._batch_max_parents = min(
+                CHILD_BATCH_MAX_PARENTS, self._batch_max_parents * 2
+            )
+            self._batch_success_streak = 0
+            LOGGER.info(
+                "Stream '%s' — batch limit raised to %s parents.",
+                self.tap_stream_id,
+                self._batch_max_parents,
+            )
 
     @staticmethod
     def _reject_unfetched_batch(records: Iterable[Dict]) -> Iterable[Dict]:
@@ -861,7 +927,11 @@ class BaseStream(ABC):
             child for child in self.child_to_sync
             if child not in batch_children
         ]
-        pending_parents: List[Dict] = []
+        # One pending queue per batched child, so a child whose batch limit
+        # shrank (e.g. after a rejection) does not force the others to flush.
+        pending: Dict[int, List[Dict]] = {
+            id(child): [] for child in batch_children
+        }
 
         with metrics.record_counter(self.tap_stream_id) as counter:
             for record in records:
@@ -911,22 +981,21 @@ class BaseStream(ABC):
                             transformer=transformer,
                             parent_obj=transformed_record,
                         )
-                    if pending_parents and not all(
-                        child.batch_has_room(pending_parents, transformed_record)
-                        for child in batch_children
-                    ):
-                        for child_stream in batch_children:
+                    for child_stream in batch_children:
+                        queue = pending[id(child_stream)]
+                        if queue and not child_stream.batch_has_room(
+                            queue, transformed_record
+                        ):
                             child_stream.sync_parent_batch(
-                                state, transformer, pending_parents
+                                state, transformer, queue
                             )
-                        pending_parents = []
-                    if batch_children:
-                        pending_parents.append(transformed_record)
+                            queue = pending[id(child_stream)] = []
+                        queue.append(transformed_record)
 
-            for child_stream in batch_children if pending_parents else []:
-                child_stream.sync_parent_batch(
-                    state, transformer, pending_parents
-                )
+            for child_stream in batch_children:
+                queue = pending[id(child_stream)]
+                if queue:
+                    child_stream.sync_parent_batch(state, transformer, queue)
 
             if bookmark_key and current_max_bookmark:
                 self.write_bookmark(
