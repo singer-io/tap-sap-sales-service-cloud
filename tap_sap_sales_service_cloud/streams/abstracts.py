@@ -582,11 +582,11 @@ class BaseStream(ABC):
                 return fetch()
             try:
                 return fetch()
-            except SAPSalesServiceCloudError:
+            except (SAPSalesServiceCloudError, Timeout):
                 self._skip_null_filter = False
                 params["$filter"] = original_filter
                 LOGGER.warning(
-                    "Stream '%s' — batch still rejected without the "
+                    "Stream '%s' — batch still failed without the "
                     "NULL-inclusive $filter, so it was not the cause; "
                     "keeping it and splitting the batch instead.",
                     self.tap_stream_id,
@@ -808,6 +808,10 @@ class BaseStream(ABC):
                 return
         for parent in parents:
             self.sync(state, transformer, parent_obj=parent)
+        # A lone parent never reaches the batched path above, so count its
+        # success here; otherwise a limit of 1 could never grow back.
+        if len(parents) == 1 and self.supports_batching:
+            self._on_batch_success(1)
 
     def _on_batch_success(self, size: int) -> None:
         """Recover the batch limit after a rejection shrank it.
