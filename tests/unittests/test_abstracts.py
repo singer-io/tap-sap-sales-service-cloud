@@ -1159,6 +1159,62 @@ class TestBatchedChildSync(unittest.TestCase):
         self.assertEqual(child._batch_max_parents, 1)
         self.assertFalse(child._skip_null_filter)
 
+    def test_null_filter_error_retries_same_batch_without_clause(self):
+        def reject_null_clause(ids, params):
+            if "eq null" in params["$filter"]:
+                raise SAPSalesServiceCloudInternalServerError(
+                    "exception 70023000: rootWhere == nullptr"
+                )
+
+        kwargs = {"replication_method": "INCREMENTAL"}
+        server = _FakeChildServer(on_request=reject_null_clause)
+        parent, child = self._make_pair(server, child_kwargs=kwargs)
+        self.assertEqual(
+            sorted(self._run(parent)),
+            sorted(self._per_parent_output(child_kwargs=kwargs)),
+        )
+        self.assertTrue(child._skip_null_filter)
+        self.assertEqual(child._batch_max_parents, 2)
+        self.assertEqual(child._batch_rejections, 0)
+        self.assertEqual(
+            server.data_filters, [["P1", "P2"], ["P3", "P4"], ["P5"]]
+        )
+
+    def test_null_filter_error_unrelated_to_clause_splits_and_keeps_it(self):
+        def reject_batches(ids, params):
+            if len(ids) > 1:
+                raise SAPSalesServiceCloudInternalServerError(
+                    "exception 70023000: rootWhere == nullptr"
+                )
+
+        kwargs = {"replication_method": "INCREMENTAL"}
+        parent, child = self._make_pair(
+            _FakeChildServer(on_request=reject_batches), child_kwargs=kwargs
+        )
+        child._batch_verified = True
+        self.assertEqual(
+            sorted(self._run(parent)),
+            sorted(self._per_parent_output(child_kwargs=kwargs)),
+        )
+        self.assertFalse(child._skip_null_filter)
+        self.assertEqual(child._batch_max_parents, 1)
+
+    def test_batch_limit_reduction_is_logged(self):
+        def reject_batches(ids, params):
+            if len(ids) > 1:
+                raise SAPSalesServiceCloudBadRequestError("rejected")
+
+        parent, child = self._make_pair(
+            _FakeChildServer(on_request=reject_batches)
+        )
+        child._batch_verified = True
+        with patch(
+            "tap_sap_sales_service_cloud.streams.abstracts.LOGGER"
+        ) as logger:
+            self._run(parent)
+        messages = [c.args[0] % c.args[1:] for c in logger.warning.call_args_list]
+        self.assertTrue(any("limit 2 -> 1" in m for m in messages))
+
     def test_unmatched_batched_record_aborts(self):
         rows = dict(_CHILD_ROWS)
         rows["P1"] = [{"ObjectID": "C1", "ParentObjectID": "OTHER"}]
