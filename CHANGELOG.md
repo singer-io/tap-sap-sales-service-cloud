@@ -1,7 +1,7 @@
 # Changelog
 
 ## 1.0.3
- - Add batch limit recovery and null-filter fallback for the batched requests. [#11](https://github.com/singer-io/tap-sap-sales-service-cloud/pull/11)
+ - Add batch limit recovery and null-filter fallback for the batched requests. [#12](https://github.com/singer-io/tap-sap-sales-service-cloud/pull/12)
 
 ## 1.0.2
 - Batch parent child sync.[#9](https://github.com/singer-io/tap-sap-sales-service-cloud/pull/9)
